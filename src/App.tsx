@@ -8,24 +8,44 @@ import { ImportFromSheets } from './components/ImportFromSheets';
 import { useTransactions } from './hooks/useTransactions';
 import { Transaction } from './types/Transaction';
 
+/**
+ * Main application component for the Option Trading Tracker
+ * Manages transaction data and provides UI for adding, importing, and viewing trades
+ */
 function App() {
+  // Fetch transactions data and CRUD operations from custom hook
   const { transactions, loading, addTransaction, bulkImportTransactions, deleteTransaction } = useTransactions();
+  
+  // State for controlling the "Add Transaction" modal visibility
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // State for controlling the "Import from Sheets" modal visibility
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
+  // Memoized set of existing symbols to prevent duplicate imports
+  // Recalculates only when transactions array changes
   const existingSymbols = useMemo(() => {
     return new Set(transactions.map(t => t.symbol));
   }, [transactions]);
 
+  /**
+   * Handles adding a new transaction
+   * Closes the modal after successful addition
+   */
   const handleAddTransaction = async (transaction: Omit<Transaction, 'id'>) => {
     await addTransaction(transaction);
     setIsModalOpen(false);
   };
 
+  /**
+   * Handles bulk import of transactions from Google Sheets
+   * Returns count of imported and skipped transactions
+   */
   const handleImport = async (transactions: Omit<Transaction, 'id'>[]): Promise<{ imported: number; skipped: number }> => {
     return await bulkImportTransactions(transactions);
   };
 
+  // Show loading spinner while fetching initial transaction data
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -37,12 +57,15 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100 py-8">
       <div className="container mx-auto px-4 max-w-7xl">
+        {/* Header section with title and action buttons */}
         <header className="mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-4xl font-bold text-gray-800">Option Trading Tracker</h1>
             <p className="text-gray-600 mt-2">Track and analyze your option trading performance</p>
           </div>
+          {/* Action buttons for importing and adding transactions */}
           <div className="flex gap-3">
+            {/* Import from Google Sheets button */}
             <button
               onClick={() => setIsImportModalOpen(true)}
               className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 shadow-md"
@@ -52,6 +75,7 @@ function App() {
               </svg>
               Import from Sheets
             </button>
+            {/* Manual transaction entry button */}
             <button
               onClick={() => setIsModalOpen(true)}
               className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-md"
@@ -64,18 +88,23 @@ function App() {
           </div>
         </header>
 
+        {/* Main content area with transaction table and analytics */}
         <div className="mb-6">
           <TransactionTable transactions={transactions} onDelete={deleteTransaction} />
         </div>
         
+        {/* Summary statistics section */}
         <SummaryStats transactions={transactions} />
         
+        {/* Monthly performance chart */}
         <MonthlyChart transactions={transactions} />
 
+        {/* Modal for adding individual transactions manually */}
         <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
           <TransactionForm onSubmit={handleAddTransaction} onClose={() => setIsModalOpen(false)} />
         </Modal>
 
+        {/* Modal for bulk importing transactions from Google Sheets */}
         <Modal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)}>
           <ImportFromSheets 
             onImport={handleImport} 
