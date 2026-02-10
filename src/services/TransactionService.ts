@@ -3,6 +3,7 @@ import { Transaction } from '../types/Transaction';
 export interface ITransactionService {
   getAll(): Promise<Transaction[]>;
   add(transaction: Omit<Transaction, 'id'>): Promise<Transaction>;
+  bulkAdd(transactions: Omit<Transaction, 'id'>[]): Promise<{ imported: number; skipped: number }>;
   update(id: string, transaction: Partial<Transaction>): Promise<Transaction>;
   delete(id: string): Promise<void>;
 }
@@ -25,6 +26,36 @@ export class LocalStorageTransactionService implements ITransactionService {
     transactions.push(newTransaction);
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(transactions));
     return newTransaction;
+  }
+
+  async bulkAdd(newTransactions: Omit<Transaction, 'id'>[]): Promise<{ imported: number; skipped: number }> {
+    const existingTransactions = await this.getAll();
+    const existingSymbols = new Set(existingTransactions.map(t => t.symbol));
+    
+    let imported = 0;
+    let skipped = 0;
+    
+    const transactionsToAdd: Transaction[] = [];
+    
+    for (const transaction of newTransactions) {
+      if (existingSymbols.has(transaction.symbol)) {
+        skipped++;
+      } else {
+        transactionsToAdd.push({
+          ...transaction,
+          id: crypto.randomUUID(),
+        });
+        existingSymbols.add(transaction.symbol);
+        imported++;
+      }
+    }
+    
+    if (transactionsToAdd.length > 0) {
+      const allTransactions = [...existingTransactions, ...transactionsToAdd];
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(allTransactions));
+    }
+    
+    return { imported, skipped };
   }
 
   async update(id: string, transaction: Partial<Transaction>): Promise<Transaction> {

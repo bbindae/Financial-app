@@ -5,6 +5,9 @@ A modern financial transaction tracking application built with React, TypeScript
 ## Features
 
 - **Transaction Management**: Add, view, and track financial transactions
+- **Google Sheets Import**: Import transactions directly from Google Sheets or CSV files
+  - Automatic duplicate detection (skips transactions with existing symbols)
+  - Support for both URL import and file upload
 - **Weekly Summary**: View transactions grouped by Date Acquired with custom week format (e.g., "2026-Jan-1st week")
 - **Monthly Summary**: Analyze transactions by month
 - **Real-time Calculations**: Automatic gain/loss calculations based on proceeds and cost basis
@@ -85,6 +88,31 @@ Financial-app/
 ```
 
 ## Usage
+
+### Importing from Google Sheets
+
+1. **Prepare your Google Sheet**:
+   - Ensure your sheet has the following columns (in order):
+     ```
+     Symbol, Security Description, Quantity, Date Acquired, Date Sold, Proceeds, Cost Basis
+     ```
+   - Make the sheet publicly accessible: Share → "Anyone with the link can view"
+
+2. **Import via URL**:
+   - Click the "Import from Sheets" button
+   - Select "Import from URL"
+   - Paste your Google Sheets URL
+   - Click "Import Transactions"
+
+3. **Import via CSV File**:
+   - Download your Google Sheet as CSV (File → Download → CSV)
+   - Click the "Import from Sheets" button
+   - Select "Upload CSV File"
+   - Choose your downloaded CSV file
+
+4. **Duplicate Handling**:
+   - The system automatically skips transactions with symbols that already exist
+   - You'll see a summary showing how many were imported vs. skipped
 
 ### Adding a Transaction
 

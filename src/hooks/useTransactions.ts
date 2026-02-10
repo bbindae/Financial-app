@@ -32,6 +32,17 @@ export const useTransactions = () => {
     }
   };
 
+  const bulkImportTransactions = async (transactions: Omit<Transaction, 'id'>[]): Promise<{ imported: number; skipped: number }> => {
+    try {
+      const result = await transactionService.bulkAdd(transactions);
+      await loadTransactions();
+      return result;
+    } catch (error) {
+      console.error('Failed to import transactions:', error);
+      throw error;
+    }
+  };
+
   const deleteTransaction = async (id: string) => {
     try {
       await transactionService.delete(id);
@@ -46,6 +57,7 @@ export const useTransactions = () => {
     transactions,
     loading,
     addTransaction,
+    bulkImportTransactions,
     deleteTransaction,
     refreshTransactions: loadTransactions,
   };
