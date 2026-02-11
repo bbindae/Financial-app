@@ -1,17 +1,17 @@
 # TODO
 
-_생성일: 2026-02-11_
+_Created: 2026-02-11_
 
-아래 항목들은 프로젝트 향후 작업 목록입니다. 필요하시면 우선순위 지정, 세부 작업 분해, 또는 각 항목에 대한 코드 변경을 진행하겠습니다.
+The following items are planned future work for the project. If you like, I can add priorities, break items down into detailed tasks, or implement any of them directly.
 
-- [ ] Element Screenshot 밑에 'Day of Bible Verse' 추가 (한글 라벨 + 영어 라벨)
-- [ ] Transaction 입력/파일 읽기 시 Symbol 중복 체크 제거
-- [ ] Transaction 기본 정렬을 Date Acquired 내림차순으로 설정
-- [ ] Transaction 각 컬럼에 정렬 화살표(▲/▼) 표시 추가
-- [ ] Total Summary에 Total Quantity 항목 추가
-- [ ] Transaction history에 년도/월 필터 기능 추가
-- [ ] 로그인 기능 추가 (Authentication)
-- [ ] LocalStorage 대신 Firebase로 데이터 영속성 전환
+- [ ] Add "Day of Bible Verse" below the Element Screenshot (show Korean label first, then English)
+- [ ] Remove symbol duplicate check when entering transactions or importing files
+- [ ] Set default transaction sort order to Date Acquired (descending)
+- [ ] Add sort arrows (▲/▼) to each transaction column header
+- [ ] Add Total Quantity to the Total Summary
+- [ ] Add year/month filters to the Transaction history
+- [ ] Add login (authentication) functionality
+- [ ] Replace LocalStorage with Firebase for data persistence
 
-추가 제안:
-- 각 항목에 예상 소요 시간(예: 1-3h)과 우선순위(상/중/하)를 할당하면 계획 수립에 도움이 됩니다.
+Additional suggestion:
+- Assign an estimated effort (e.g., 1–3h) and a priority (High/Medium/Low) to each item to help planning.
