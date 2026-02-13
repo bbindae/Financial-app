@@ -37,6 +37,13 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions
     setSortConfig({ key, direction });
   };
 
+  const getSortArrow = (key: keyof Transaction) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return null;
+    }
+    return sortConfig.direction === 'asc' ? ' ▲' : ' ▼';
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
       <h2 className="text-2xl font-bold p-6 pb-4">Transaction History</h2>
@@ -44,27 +51,27 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions
         <table className="w-full">
           <thead className="bg-gray-100">
             <tr>
-              <th className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-gray-200" onClick={() => requestSort('symbol')}>
-                Symbol
+              <th className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-gray-200 whitespace-nowrap" onClick={() => requestSort('symbol')}>
+                Symbol{getSortArrow('symbol')}
               </th>
               <th className="px-4 py-3 text-left text-sm font-semibold">Security Description</th>
-              <th className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-gray-200" onClick={() => requestSort('quantity')}>
-                Quantity
+              <th className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-gray-200 whitespace-nowrap" onClick={() => requestSort('quantity')}>
+                Quantity{getSortArrow('quantity')}
               </th>
-              <th className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-gray-200" onClick={() => requestSort('dateAcquired')}>
-                Date Acquired
+              <th className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-gray-200 whitespace-nowrap" onClick={() => requestSort('dateAcquired')}>
+                Date Acquired{getSortArrow('dateAcquired')}
               </th>
-              <th className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-gray-200" onClick={() => requestSort('dateSold')}>
-                Date Sold
+              <th className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-gray-200 whitespace-nowrap" onClick={() => requestSort('dateSold')}>
+                Date Sold{getSortArrow('dateSold')}
               </th>
-              <th className="px-4 py-3 text-right text-sm font-semibold cursor-pointer hover:bg-gray-200" onClick={() => requestSort('proceeds')}>
-                Proceeds
+              <th className="px-4 py-3 text-right text-sm font-semibold cursor-pointer hover:bg-gray-200 whitespace-nowrap" onClick={() => requestSort('proceeds')}>
+                Proceeds{getSortArrow('proceeds')}
               </th>
-              <th className="px-4 py-3 text-right text-sm font-semibold cursor-pointer hover:bg-gray-200" onClick={() => requestSort('costBasis')}>
-                Cost Basis
+              <th className="px-4 py-3 text-right text-sm font-semibold cursor-pointer hover:bg-gray-200 whitespace-nowrap" onClick={() => requestSort('costBasis')}>
+                Cost Basis{getSortArrow('costBasis')}
               </th>
-              <th className="px-4 py-3 text-right text-sm font-semibold cursor-pointer hover:bg-gray-200" onClick={() => requestSort('gainLoss')}>
-                Gain/Loss
+              <th className="px-4 py-3 text-right text-sm font-semibold cursor-pointer hover:bg-gray-200 whitespace-nowrap" onClick={() => requestSort('gainLoss')}>
+                Gain/Loss{getSortArrow('gainLoss')}
               </th>
               <th className="px-4 py-3 text-center text-sm font-semibold">Action</th>
             </tr>
