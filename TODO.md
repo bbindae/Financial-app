@@ -6,10 +6,10 @@ The following items are planned future work for the project. If you like, I can 
 
 - [ ] Add "Day of Bible Verse" below the Element Screenshot (show Korean label first, then English)
 - [x] Remove symbol duplicate check when entering transactions or importing files
-- [ ] Set default transaction sort order to Date Acquired (descending)
+- [x] Set default transaction sort order to Date Acquired (descending)
 - [x] Add sort arrows (▲/▼) to each transaction column header
 - [ ] Add Total Quantity to the Total Summary
-- [ ] Add year/month filters to the Transaction history
+- [x] Add year/month filters to the Transaction history
 - [ ] Add login (authentication) functionality
 - [ ] Replace LocalStorage with Firebase for data persistence
 
