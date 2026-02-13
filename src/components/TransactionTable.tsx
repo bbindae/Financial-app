@@ -119,6 +119,12 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions
 
   const hasNonDefaultFilters = selectedYear !== currentYear || selectedMonth !== currentMonth;
 
+  // Extract only the leading alphabetic characters from symbol (before first number)
+  const getSymbolDisplay = (symbol: string): string => {
+    const match = symbol.match(/^[A-Za-z]+/);
+    return match ? match[0] : symbol;
+  };
+
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   return (
@@ -177,10 +183,10 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions
         <table className="w-full table-fixed">
           <thead className="bg-gray-100">
             <tr>
-              <th className="px-2 py-3 text-left text-xs font-semibold cursor-pointer hover:bg-gray-200 w-[10%]" onClick={() => requestSort('symbol')}>
+              <th className="px-2 py-3 text-left text-xs font-semibold cursor-pointer hover:bg-gray-200 w-[6%]" onClick={() => requestSort('symbol')}>
                 Symbol{getSortArrow('symbol')}
               </th>
-              <th className="px-2 py-3 text-left text-xs font-semibold w-[28%]">Security Desc.</th>
+              <th className="px-2 py-3 text-left text-xs font-semibold w-[32%]">Security Desc.</th>
               <th className="px-2 py-3 text-left text-xs font-semibold cursor-pointer hover:bg-gray-200 w-[5%]" onClick={() => requestSort('quantity')}>
                 Qty{getSortArrow('quantity')}
               </th>
@@ -205,22 +211,24 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions
           <tbody>
             {paginatedTransactions.map((transaction, index) => (
               <tr key={transaction.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                <td className="px-2 py-2 text-xs font-medium truncate">{transaction.symbol}</td>
-                <td className="px-2 py-2 text-xs truncate" title={transaction.securityDescription}>
+                <td className="px-2 py-2 text-sm font-medium truncate" title={transaction.symbol}>
+                  {getSymbolDisplay(transaction.symbol)}
+                </td>
+                <td className="px-2 py-2 text-sm truncate" title={transaction.securityDescription}>
                   {transaction.securityDescription}
                 </td>
-                <td className="px-2 py-2 text-xs">{transaction.quantity}</td>
-                <td className="px-2 py-2 text-xs">{transaction.dateAcquired}</td>
-                <td className="px-2 py-2 text-xs">{transaction.dateSold}</td>
-                <td className="px-2 py-2 text-xs text-right">{formatCurrency(transaction.proceeds)}</td>
-                <td className="px-2 py-2 text-xs text-right">{formatCurrency(transaction.costBasis)}</td>
-                <td className={`px-2 py-2 text-xs text-right font-semibold ${transaction.gainLoss < 0 ? 'text-red-600' : 'text-black'}`}>
+                <td className="px-2 py-2 text-sm">{transaction.quantity}</td>
+                <td className="px-2 py-2 text-sm">{transaction.dateAcquired}</td>
+                <td className="px-2 py-2 text-sm">{transaction.dateSold}</td>
+                <td className="px-2 py-2 text-sm text-right">{formatCurrency(transaction.proceeds)}</td>
+                <td className="px-2 py-2 text-sm text-right">{formatCurrency(transaction.costBasis)}</td>
+                <td className={`px-2 py-2 text-sm text-right font-semibold ${transaction.gainLoss < 0 ? 'text-red-600' : 'text-black'}`}>
                   {formatCurrency(transaction.gainLoss)}
                 </td>
                 <td className="px-2 py-2 text-center">
                   <button
                     onClick={() => onDelete(transaction.id)}
-                    className="text-red-600 hover:text-red-800 text-xs font-medium"
+                    className="text-red-600 hover:text-red-800 text-sm font-medium"
                   >
                     Delete
                   </button>
