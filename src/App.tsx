@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { TransactionForm } from './components/TransactionForm';
 import { TransactionTable } from './components/TransactionTable';
 import { SummaryStats } from './components/SummaryStats';
@@ -21,12 +21,6 @@ function App() {
   
   // State for controlling the "Import from Sheets" modal visibility
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-
-  // Memoized set of existing symbols to prevent duplicate imports
-  // Recalculates only when transactions array changes
-  const existingSymbols = useMemo(() => {
-    return new Set(transactions.map(t => t.symbol));
-  }, [transactions]);
 
   /**
    * Handles adding a new transaction
@@ -109,7 +103,6 @@ function App() {
           <ImportFromSheets 
             onImport={handleImport} 
             onClose={() => setIsImportModalOpen(false)}
-            existingSymbols={existingSymbols}
           />
         </Modal>
       </div>

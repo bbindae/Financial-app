@@ -30,32 +30,16 @@ export class LocalStorageTransactionService implements ITransactionService {
 
   async bulkAdd(newTransactions: Omit<Transaction, 'id'>[]): Promise<{ imported: number; skipped: number }> {
     const existingTransactions = await this.getAll();
-    const existingSymbols = new Set(existingTransactions.map(t => t.symbol));
     
-    let imported = 0;
-    let skipped = 0;
+    const transactionsToAdd: Transaction[] = newTransactions.map(transaction => ({
+      ...transaction,
+      id: crypto.randomUUID(),
+    }));
     
-    const transactionsToAdd: Transaction[] = [];
+    const allTransactions = [...existingTransactions, ...transactionsToAdd];
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(allTransactions));
     
-    for (const transaction of newTransactions) {
-      if (existingSymbols.has(transaction.symbol)) {
-        skipped++;
-      } else {
-        transactionsToAdd.push({
-          ...transaction,
-          id: crypto.randomUUID(),
-        });
-        existingSymbols.add(transaction.symbol);
-        imported++;
-      }
-    }
-    
-    if (transactionsToAdd.length > 0) {
-      const allTransactions = [...existingTransactions, ...transactionsToAdd];
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(allTransactions));
-    }
-    
-    return { imported, skipped };
+    return { imported: transactionsToAdd.length, skipped: 0 };
   }
 
   async update(id: string, transaction: Partial<Transaction>): Promise<Transaction> {
