@@ -1,4 +1,4 @@
-import { format, parseISO, startOfWeek, getYear, getWeek } from 'date-fns';
+import { format, parseISO, getYear } from 'date-fns';
 
 export const formatDate = (date: string): string => {
   return format(parseISO(date), 'yyyy-MM-dd');
@@ -11,8 +11,16 @@ export const getMonthKey = (date: string): string => {
 export const getWeekKey = (date: string): string => {
   const parsedDate = parseISO(date);
   const year = getYear(parsedDate);
-  const week = getWeek(parsedDate);
-  return `${year}-W${String(week).padStart(2, '0')}`;
+  const month = parsedDate.getMonth(); // 0-indexed
+  const dayOfMonth = parsedDate.getDate();
+  
+  // Calculate week of month (1-based)
+  const firstDayOfMonth = new Date(year, month, 1);
+  const firstDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday
+  const weekOfMonth = Math.ceil((dayOfMonth + firstDayOfWeek) / 7);
+  
+  // Format: "YYYY-MM-Wn" (e.g., "2026-02-W1")
+  return `${year}-${String(month + 1).padStart(2, '0')}-W${weekOfMonth}`;
 };
 
 export const formatMonthDisplay = (monthKey: string): string => {
@@ -21,30 +29,18 @@ export const formatMonthDisplay = (monthKey: string): string => {
 };
 
 export const formatWeekDisplay = (weekKey: string): string => {
-  // weekKey format: "YYYY-Www" (e.g., "2026-W01")
-  const [yearStr, weekStr] = weekKey.split('-W');
-  const year = parseInt(yearStr);
-  const weekNum = parseInt(weekStr);
+  // weekKey format: "YYYY-MM-Wn" (e.g., "2026-02-W1")
+  const parts = weekKey.split('-');
+  const year = parseInt(parts[0]);
+  const month = parseInt(parts[1]) - 1; // Convert to 0-indexed
+  const weekNum = parseInt(parts[2].substring(1)); // Remove 'W' prefix
   
-  // Calculate the first day of the year
-  const firstDayOfYear = new Date(year, 0, 1);
-  const daysToFirstMonday = (8 - firstDayOfYear.getDay()) % 7;
-  
-  // Calculate the date for this week
-  const weekDate = new Date(year, 0, 1 + daysToFirstMonday + (weekNum - 1) * 7);
-  
-  // Get the month name (short form)
+  // Get month name (short form)
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const month = monthNames[weekDate.getMonth()];
-  
-  // Get week of month
-  const firstDayOfMonth = new Date(weekDate.getFullYear(), weekDate.getMonth(), 1);
-  const dayOfMonth = weekDate.getDate();
-  const firstDayOfWeek = firstDayOfMonth.getDay();
-  const weekOfMonth = Math.ceil((dayOfMonth + firstDayOfWeek) / 7);
+  const monthName = monthNames[month];
   
   // Add suffix
-  const suffix = weekOfMonth === 1 ? 'st' : weekOfMonth === 2 ? 'nd' : weekOfMonth === 3 ? 'rd' : 'th';
+  const suffix = weekNum === 1 ? 'st' : weekNum === 2 ? 'nd' : weekNum === 3 ? 'rd' : 'th';
   
-  return `${year}-${month}-${weekOfMonth}${suffix} week`;
+  return `${year}-${monthName}-${weekNum}${suffix} week`;
 };
