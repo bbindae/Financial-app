@@ -5,7 +5,7 @@ _Created: 2026-02-11_
 The following items are planned future work for the project. If you like, I can add priorities, break items down into detailed tasks, or implement any of them directly.
 
 - [ ] Add "Day of Bible Verse" below the Element Screenshot (show Korean label first, then English)
-- [ ] Remove symbol duplicate check when entering transactions or importing files
+- [x] Remove symbol duplicate check when entering transactions or importing files
 - [ ] Set default transaction sort order to Date Acquired (descending)
 - [ ] Add sort arrows (▲/▼) to each transaction column header
 - [ ] Add Total Quantity to the Total Summary
