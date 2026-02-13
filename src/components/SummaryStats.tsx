@@ -11,6 +11,7 @@ export const SummaryStats: React.FC<SummaryStatsProps> = ({ transactions }) => {
   const weeklySummaries = groupByWeek(transactions);
   const monthlySummaries = groupByMonth(transactions);
   const total = calculateTotal(transactions);
+  const totalQuantity = transactions.reduce((sum, t) => sum + t.quantity, 0);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -57,6 +58,10 @@ export const SummaryStats: React.FC<SummaryStatsProps> = ({ transactions }) => {
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600 mb-1">Total Transactions</p>
             <p className="text-3xl font-bold">{transactions.length}</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-600 mb-1">Total Option Quantity</p>
+            <p className="text-3xl font-bold">{totalQuantity}</p>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600 mb-1">Overall Gain/Loss</p>

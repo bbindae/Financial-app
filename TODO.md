@@ -8,7 +8,7 @@ The following items are planned future work for the project. If you like, I can 
 - [x] Remove symbol duplicate check when entering transactions or importing files
 - [x] Set default transaction sort order to Date Acquired (descending)
 - [x] Add sort arrows (▲/▼) to each transaction column header
-- [ ] Add Total Quantity to the Total Summary
+- [x] Add Total Quantity to the Total Summary
 - [x] Add year/month filters to the Transaction history
 - [ ] Add login (authentication) functionality
 - [ ] Replace LocalStorage with Firebase for data persistence
