@@ -4,10 +4,9 @@ import { Transaction } from '../types/Transaction';
 interface ImportFromSheetsProps {
   onImport: (transactions: Omit<Transaction, 'id'>[]) => Promise<{ imported: number; skipped: number }>;
   onClose?: () => void;
-  existingSymbols: Set<string>;
 }
 
-export const ImportFromSheets: React.FC<ImportFromSheetsProps> = ({ onImport, onClose, existingSymbols }) => {
+export const ImportFromSheets: React.FC<ImportFromSheetsProps> = ({ onImport, onClose }) => {
   const [sheetsUrl, setSheetsUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
@@ -48,11 +47,6 @@ export const ImportFromSheets: React.FC<ImportFromSheetsProps> = ({ onImport, on
       if (values.length < 7) continue;
 
       const [symbol, securityDescription, quantity, dateAcquired, dateSold, proceeds, costBasis] = values;
-
-      // Skip if symbol already exists
-      if (existingSymbols.has(symbol.trim())) {
-        continue;
-      }
 
       const proceedsNum = parseFloat(proceeds.replace(/[,$]/g, ''));
       const costBasisNum = parseFloat(costBasis.replace(/[,$]/g, ''));
@@ -126,7 +120,7 @@ export const ImportFromSheets: React.FC<ImportFromSheetsProps> = ({ onImport, on
       const transactions = parseCsvToTransactions(csvText);
       
       if (transactions.length === 0) {
-        setError('No valid transactions found or all symbols already exist');
+        setError('No valid transactions found');
         setLoading(false);
         return;
       }
@@ -153,7 +147,7 @@ export const ImportFromSheets: React.FC<ImportFromSheetsProps> = ({ onImport, on
       const transactions = parseCsvToTransactions(text);
       
       if (transactions.length === 0) {
-        setError('No valid transactions found or all symbols already exist');
+        setError('No valid transactions found');
         setLoading(false);
         return;
       }
