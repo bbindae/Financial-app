@@ -10,9 +10,10 @@ The following items are planned future work for the project. If you like, I can 
 - [x] Add sort arrows (▲/▼) to each transaction column header
 - [x] Add Total Quantity to the Total Summary
 - [x] Add year/month filters to the Transaction history
-- [ ] Add login (authentication) functionality
+- [x] Add login (authentication) functionality
 - [ ] Replace LocalStorage with Firebase for data persistence
 - [ ] Add a realtime stock tracker and allows to add symbol tracked
+- [ ] Host website, hyukkim.com/financial/options and add this web into it 
 
 
 Additional suggestion:

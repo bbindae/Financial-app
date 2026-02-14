@@ -1,46 +1,146 @@
-import React, { useMemo } from 'react';
-import { formatWeekLabel, getWeekStart } from '../utils/dateUtils';
+import React, { useState } from 'react';
+import { TransactionForm } from './TransactionForm';
+import { TransactionTable } from './TransactionTable';
+import { SummaryStats } from './SummaryStats';
+import { MonthlyChart } from './MonthlyChart';
+import { Modal } from './Modal';
+import { ImportFromSheets } from './ImportFromSheets';
+import { useTransactions } from '../hooks/useTransactions';
+import { useAuth } from '../hooks/useAuth';
 import { Transaction } from '../types/Transaction';
 
-interface DashboardProps {
-  transactions: Transaction[];
-}
+/**
+ * Main Dashboard component for the Option Trading Tracker
+ * Manages transaction data and provides UI for adding, importing, and viewing trades
+ */
+const Dashboard: React.FC = () => {
+  // Fetch transactions data and CRUD operations from custom hook
+  const { transactions, loading, addTransaction, bulkImportTransactions, deleteTransaction } = useTransactions();
+  
+  // Authentication context for logout functionality
+  const { signOut, currentUser } = useAuth();
+  
+  // State for controlling the "Add Transaction" modal visibility
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // State for controlling the "Import from Sheets" modal visibility
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
-const Dashboard: React.FC<DashboardProps> = ({ transactions }) => {
-  const weeklySummary = useMemo(() => {
-    const summary: { [key: string]: { totalProceeds: number; totalCostBasis: number; totalGain: number } } = {};
-    
-    transactions.forEach(transaction => {
-      if (transaction.dateAcquired) {
-        const weekStart = getWeekStart(new Date(transaction.dateAcquired));
-        const weekLabel = formatWeekLabel(weekStart);
-        
-        if (!summary[weekLabel]) {
-          summary[weekLabel] = { totalProceeds: 0, totalCostBasis: 0, totalGain: 0 };
-        }
-        
-        summary[weekLabel].totalProceeds += transaction.proceeds;
-        summary[weekLabel].totalCostBasis += transaction.costBasis;
-        summary[weekLabel].totalGain += transaction.proceeds - transaction.costBasis;
-      }
-    });
-    
-    return Object.entries(summary)
-      .map(([week, data]) => ({ week, ...data }))
-      .sort((a, b) => b.week.localeCompare(a.week));
-  }, [transactions]);
+  /**
+   * Handles adding a new transaction
+   * Closes the modal after successful addition
+   */
+  const handleAddTransaction = async (transaction: Omit<Transaction, 'id'>) => {
+    await addTransaction(transaction);
+    setIsModalOpen(false);
+  };
+
+  /**
+   * Handles bulk import of transactions from Google Sheets
+   * Returns count of imported and skipped transactions
+   */
+  const handleImport = async (transactions: Omit<Transaction, 'id'>[]): Promise<{ imported: number; skipped: number }> => {
+    return await bulkImportTransactions(transactions);
+  };
+
+  /**
+   * Handles user logout
+   */
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  // Show loading spinner while fetching initial transaction data
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-xl">Loading...</div>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <h2>Weekly Summary</h2>
-      {weeklySummary.map((item) => (
-        <div key={item.week}>
-          <h3>{item.week}</h3>
-          <p>Total Proceeds: {item.totalProceeds}</p>
-          <p>Total Cost Basis: {item.totalCostBasis}</p>
-          <p>Total Gain: {item.totalGain}</p>
+    <div className="min-h-screen bg-gray-100 py-8">
+      <div className="container mx-auto px-4 max-w-7xl">
+        {/* Header section with title and action buttons */}
+        <header className="mb-8">
+          {/* Top bar with logout button */}
+          <div className="flex justify-end mb-4">
+            <div className="flex items-center gap-4">
+              {currentUser && (
+                <span className="text-sm text-gray-600">
+                  {currentUser.email}
+                </span>
+              )}
+              <button
+                onClick={handleLogout}
+                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm"
+              >
+                로그아웃
+              </button>
+            </div>
+          </div>
+          
+          {/* Title and action buttons */}
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-800">Option Trading Tracker</h1>
+              <p className="text-gray-600 mt-2">Track and analyze your option trading performance</p>
+            </div>
+            {/* Action buttons for importing and adding transactions */}
+            <div className="flex gap-3">
+              {/* Import from Google Sheets button */}
+              <button
+                onClick={() => setIsImportModalOpen(true)}
+                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 shadow-md"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                Import from Sheets
+              </button>
+              {/* Manual transaction entry button */}
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-md"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Transaction
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Main content area with transaction table and analytics */}
+        <div className="mb-6">
+          <TransactionTable transactions={transactions} onDelete={deleteTransaction} />
         </div>
-      ))}
+        
+        {/* Summary statistics section */}
+        <SummaryStats transactions={transactions} />
+        
+        {/* Monthly performance chart */}
+        <MonthlyChart transactions={transactions} />
+
+        {/* Modal for adding individual transactions manually */}
+        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+          <TransactionForm onSubmit={handleAddTransaction} onClose={() => setIsModalOpen(false)} />
+        </Modal>
+
+        {/* Modal for bulk importing transactions from Google Sheets */}
+        <Modal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)}>
+          <ImportFromSheets 
+            onImport={handleImport} 
+            onClose={() => setIsImportModalOpen(false)}
+          />
+        </Modal>
+      </div>
     </div>
   );
 };
