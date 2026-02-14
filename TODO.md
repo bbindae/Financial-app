@@ -12,6 +12,8 @@ The following items are planned future work for the project. If you like, I can 
 - [x] Add year/month filters to the Transaction history
 - [ ] Add login (authentication) functionality
 - [ ] Replace LocalStorage with Firebase for data persistence
+- [ ] Add a realtime stock tracker and allows to add symbol tracked
+
 
 Additional suggestion:
-- Assign an estimated effort (e.g., 1–3h) and a priority (High/Medium/Low) to each item to help planning.
+- Assign an estimated effort (e.g., 1–3h) and a priority (High/Medium/Low) to each item to help plan
