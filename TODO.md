@@ -5,6 +5,10 @@ _Created: 2026-02-11_
 The following items are planned future work for the project. If you like, I can add priorities, break items down into detailed tasks, or implement any of them directly.
 
 - [ ] Add "Day of Bible Verse" below the Element Screenshot (show Korean label first, then English)
+- [ ] Add a realtime stock tracker and allows to add symbol tracked
+- [ ] Allow to add options with strike price and expiration date and compare them with tracking symbols
+- [ ] Host website, hyukkim.com/financial/options and add this web into it 
+- [ ] Add github workflow to deploy when pull request is merged into main branch
 - [x] Remove symbol duplicate check when entering transactions or importing files
 - [x] Set default transaction sort order to Date Acquired (descending)
 - [x] Add sort arrows (▲/▼) to each transaction column header
@@ -12,8 +16,6 @@ The following items are planned future work for the project. If you like, I can 
 - [x] Add year/month filters to the Transaction history
 - [x] Add login (authentication) functionality
 - [x] Replace LocalStorage with Firebase for data persistence
-- [ ] Add a realtime stock tracker and allows to add symbol tracked
-- [ ] Host website, hyukkim.com/financial/options and add this web into it 
 
 
 Additional suggestion:
