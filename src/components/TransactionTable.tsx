@@ -7,6 +7,18 @@ interface TransactionTableProps {
   onDelete: (id: string) => void;
 }
 
+/**
+ * Format date to yyyy-mm-dd
+ */
+const formatDate = (dateString: string): string => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, onDelete }) => {
   // Get current year and month for default filter
   const currentDate = new Date();
@@ -218,8 +230,8 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions
                   {transaction.securityDescription}
                 </td>
                 <td className="px-2 py-2 text-sm">{transaction.quantity}</td>
-                <td className="px-2 py-2 text-sm">{transaction.dateAcquired}</td>
-                <td className="px-2 py-2 text-sm">{transaction.dateSold}</td>
+                <td className="px-2 py-2 text-sm">{formatDate(transaction.dateAcquired)}</td>
+                <td className="px-2 py-2 text-sm">{formatDate(transaction.dateSold)}</td>
                 <td className="px-2 py-2 text-sm text-right">{formatCurrency(transaction.proceeds)}</td>
                 <td className="px-2 py-2 text-sm text-right">{formatCurrency(transaction.costBasis)}</td>
                 <td className={`px-2 py-2 text-sm text-right font-semibold ${transaction.gainLoss < 0 ? 'text-red-600' : 'text-black'}`}>
