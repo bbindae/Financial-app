@@ -11,11 +11,11 @@ const Login: React.FC = () => {
   const { signIn, currentUser, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  // 이미 로그인된 경우 대시보드로 리다이렉트
+  // Redirect to dashboard if already logged in
   useEffect(() => {
     console.log('useEffect - currentUser:', currentUser, 'authLoading:', authLoading);
     if (currentUser && !authLoading) {
-      console.log('useEffect에서 대시보드로 이동');
+      console.log('Navigating to dashboard from useEffect');
       navigate('/dashboard', { replace: true });
     }
   }, [currentUser, authLoading, navigate]);
@@ -24,34 +24,34 @@ const Login: React.FC = () => {
     e.preventDefault();
     
     if (!email || !password) {
-      setError('이메일과 비밀번호를 입력해주세요.');
+      setError('Please enter email and password.');
       return;
     }
 
     try {
       setError('');
       setLoading(true);
-      console.log('로그인 시도 중...');
+      console.log('Attempting login...');
       await signIn(email, password);
-      console.log('signIn 완료! currentUser 업데이트됨');
+      console.log('signIn completed! currentUser updated');
       
-      // signIn이 완료되면 currentUser가 이미 설정되어 있음
-      // useEffect가 자동으로 navigate 처리
+      // After signIn completes, currentUser is already set
+      // useEffect will automatically handle navigation
     } catch (err: any) {
       console.error('Login error:', err);
       setLoading(false);
       
-      // Firebase 에러 메시지를 사용자 친화적으로 변환
+      // Convert Firebase error messages to user-friendly text
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-        setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+        setError('Invalid email or password.');
       } else if (err.code === 'auth/invalid-email') {
-        setError('올바른 이메일 형식이 아닙니다.');
+        setError('Invalid email format.');
       } else if (err.code === 'auth/too-many-requests') {
-        setError('로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.');
+        setError('Too many login attempts. Please try again later.');
       } else if (err.code === 'auth/invalid-credential') {
-        setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+        setError('Invalid email or password.');
       } else {
-        setError(`로그인 중 오류가 발생했습니다: ${err.message}`);
+        setError(`Login error occurred: ${err.message}`);
       }
     }
   };
@@ -61,13 +61,13 @@ const Login: React.FC = () => {
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Option Trading Tracker</h1>
-          <p className="text-gray-600">로그인하여 계속하기</p>
+          <p className="text-gray-600">Sign in to continue</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              이메일
+              Email
             </label>
             <input
               id="email"
@@ -82,7 +82,7 @@ const Login: React.FC = () => {
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              비밀번호
+              Password
             </label>
             <input
               id="password"
@@ -106,12 +106,12 @@ const Login: React.FC = () => {
             disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-md transition duration-200 disabled:bg-blue-300 disabled:cursor-not-allowed"
           >
-            {loading ? '로그인 중...' : '로그인'}
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
         <div className="mt-6 text-center text-sm text-gray-600">
-          <p>로그인하면 일주일 동안 자동으로 로그인 상태가 유지됩니다.</p>
+          <p>You will remain signed in for one week.</p>
         </div>
       </div>
     </div>
