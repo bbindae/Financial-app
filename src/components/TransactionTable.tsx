@@ -9,14 +9,29 @@ interface TransactionTableProps {
 
 /**
  * Format date to yyyy-mm-dd
+ * Dates are stored as YYYY-MM-DD strings in Los Angeles timezone
+ * Display without UTC conversion to preserve the original date
  */
 const formatDate = (dateString: string): string => {
   if (!dateString) return '';
-  const date = new Date(dateString);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  
+  // If already in YYYY-MM-DD format, return as is (no timezone conversion)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return dateString;
+  }
+  
+  // Handle ISO timestamp format (e.g., "2026-01-02T00:00:00.000Z")
+  // Extract just the date part (YYYY-MM-DD)
+  if (dateString.includes('T')) {
+    return dateString.split('T')[0];
+  }
+  
+  // Parse other formats
+  const [year, month, day] = dateString.includes('-') 
+    ? dateString.split('-') 
+    : dateString.split('/').reverse();
+  
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 };
 
 export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, onDelete }) => {
@@ -45,9 +60,13 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions
     const monthSet = new Set<string>();
     
     transactions.forEach(t => {
-      const date = new Date(t.dateAcquired);
-      yearSet.add(date.getFullYear().toString());
-      monthSet.add((date.getMonth() + 1).toString().padStart(2, '0'));
+      // Extract date from YYYY-MM-DD or ISO timestamp format
+      const dateStr = t.dateAcquired.includes('T') 
+        ? t.dateAcquired.split('T')[0] 
+        : t.dateAcquired;
+      const [year, month] = dateStr.split('-');
+      yearSet.add(year);
+      monthSet.add(month);
     });
     
     return {
@@ -59,9 +78,11 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions
   // Apply filters
   const filteredTransactions = useMemo(() => {
     return transactions.filter(transaction => {
-      const date = new Date(transaction.dateAcquired);
-      const year = date.getFullYear().toString();
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      // Extract date from YYYY-MM-DD or ISO timestamp format
+      const dateStr = transaction.dateAcquired.includes('T') 
+        ? transaction.dateAcquired.split('T')[0] 
+        : transaction.dateAcquired;
+      const [year, month] = dateStr.split('-');
       
       if (selectedYear && year !== selectedYear) return false;
       if (selectedMonth && month !== selectedMonth) return false;

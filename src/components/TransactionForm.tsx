@@ -8,6 +8,8 @@ interface TransactionFormProps {
 }
 
 export const TransactionForm: React.FC<TransactionFormProps> = ({ onSubmit, onClose }) => {
+  // Dates are in Los Angeles timezone - HTML input type="date" uses local timezone
+  // Values are stored as YYYY-MM-DD strings without timezone conversion
   const [formData, setFormData] = useState({
     symbol: '',
     securityDescription: '',

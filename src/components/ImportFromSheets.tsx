@@ -93,26 +93,23 @@ export const ImportFromSheets: React.FC<ImportFromSheetsProps> = ({ onImport, on
   };
 
   const formatDate = (dateStr: string): string => {
-    // Parse MM/DD/YYYY format directly to avoid timezone issues
+    // CSV dates are in Los Angeles timezone - store as YYYY-MM-DD string without timezone conversion
     const trimmed = dateStr.trim();
-    const match = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
     
+    // Handle MM/DD/YYYY format (Fidelity CSV format)
+    const match = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
     if (match) {
       const [, month, day, year] = match;
       return `${year}-${month}-${day}`;
     }
     
-    // Fallback for other formats - use local date to avoid timezone shift
-    const date = new Date(trimmed);
-    if (isNaN(date.getTime())) {
+    // If already in YYYY-MM-DD format, return as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
       return trimmed;
     }
     
-    // Use local date components to avoid timezone conversion
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    // Fallback: return as is
+    return trimmed;
   };
 
   const handleImportFromUrl = async () => {

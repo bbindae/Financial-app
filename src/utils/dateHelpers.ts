@@ -1,15 +1,32 @@
-import { format, parseISO, getYear } from 'date-fns';
+import { format, getYear } from 'date-fns';
+
+/**
+ * Parse YYYY-MM-DD string to local Date object
+ * Avoids timezone issues by parsing components directly
+ * All dates are in Los Angeles timezone and stored as YYYY-MM-DD strings
+ */
+const parseLocalDate = (dateStr: string): Date => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
 
 export const formatDate = (date: string): string => {
-  return format(parseISO(date), 'yyyy-MM-dd');
+  // Already in YYYY-MM-DD format, return as is (no timezone conversion)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return date;
+  }
+  return format(parseLocalDate(date), 'yyyy-MM-dd');
 };
 
 export const getMonthKey = (date: string): string => {
-  return format(parseISO(date), 'yyyy-MM');
+  // Handle ISO timestamp format (e.g., "2026-01-02T00:00:00.000Z")
+  const dateStr = date.includes('T') ? date.split('T')[0] : date;
+  // Extract YYYY-MM directly from YYYY-MM-DD (no timezone conversion)
+  return dateStr.substring(0, 7);
 };
 
 export const getWeekKey = (date: string): string => {
-  const parsedDate = parseISO(date);
+  const parsedDate = parseLocalDate(date);
   const year = getYear(parsedDate);
   const month = parsedDate.getMonth(); // 0-indexed
   const dayOfMonth = parsedDate.getDate();
