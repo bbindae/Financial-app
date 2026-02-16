@@ -5,6 +5,8 @@ import { formatCurrency } from '../utils/calculations';
 interface TransactionTableProps {
   transactions: Transaction[];
   onDelete: (id: string) => void;
+  onImport?: () => void;
+  onAddTransaction?: () => void;
 }
 
 /**
@@ -34,7 +36,7 @@ const formatDate = (dateString: string): string => {
   return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 };
 
-export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, onDelete }) => {
+export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, onDelete, onImport, onAddTransaction }) => {
   // Get current year and month for default filter
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear().toString();
@@ -161,12 +163,11 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="p-6 pb-4">
-        <h2 className="text-2xl font-bold mb-4">Transaction History</h2>
-        
-        {/* Filters */}
-        <div className="flex gap-4 items-center mb-4">
+    <>
+      {/* Filters and Action Buttons */}
+      <div className="flex justify-between items-end mb-4 gap-4">
+        {/* Left side - Filters */}
+        <div className="flex gap-4 items-end">
           <div>
             <label className="block text-sm font-medium mb-1">Year</label>
             <select 
@@ -200,16 +201,44 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions
           {hasNonDefaultFilters && (
             <button
               onClick={clearFilters}
-              className="mt-6 px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 rounded"
+              className="px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 rounded"
             >
               Reset to This Month
             </button>
           )}
           
-          <div className="ml-auto text-sm text-gray-600 mt-6">
+          <div className="text-sm text-gray-600">
             Showing {paginatedTransactions.length} of {sortedTransactions.length} transactions
           </div>
         </div>
+        
+        {/* Right side - Action Buttons */}
+        {(onImport || onAddTransaction) && (
+          <div className="flex gap-3">
+            {onImport && (
+              <button
+                onClick={onImport}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 text-sm"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                Import from Sheets
+              </button>
+            )}
+            {onAddTransaction && (
+              <button
+                onClick={onAddTransaction}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Transaction
+              </button>
+            )}
+          </div>
+        )}
       </div>
       
       <div className="overflow-auto">
@@ -312,6 +341,6 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions
           </button>
         </div>
       )}
-    </div>
+    </>
   );
 };

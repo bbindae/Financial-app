@@ -140,35 +140,10 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
           
-          {/* Title and action buttons */}
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-800">Option Trading Tracker</h1>
-              <p className="text-gray-600 mt-2">Track and analyze your option trading performance</p>
-            </div>
-            {/* Action buttons for importing and adding transactions */}
-            <div className="flex gap-3">
-              {/* Import from Google Sheets button */}
-              <button
-                onClick={() => setIsImportModalOpen(true)}
-                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 shadow-md"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                Import from Sheets
-              </button>
-              {/* Manual transaction entry button */}
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-md"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Add Transaction
-              </button>
-            </div>
+          {/* Title */}
+          <div>
+            <h1 className="text-4xl font-bold text-gray-800">Option Trading Tracker</h1>
+            <p className="text-gray-600 mt-2">Track and analyze your option trading performance</p>
           </div>
         </header>
 
@@ -244,9 +219,15 @@ const Dashboard: React.FC = () => {
           <WatchList userId={currentUser?.uid} />
         </div>
 
-        {/* Main content area with transaction table and analytics */}
-        <div className="mb-6">
-          <TransactionTable transactions={transactions} onDelete={deleteTransaction} />
+        {/* Transaction History Panel */}
+        <div className="mb-6 bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Transaction History</h2>
+          <TransactionTable 
+            transactions={transactions} 
+            onDelete={deleteTransaction}
+            onImport={() => setIsImportModalOpen(true)}
+            onAddTransaction={() => setIsModalOpen(true)}
+          />
         </div>
         
         {/* Summary statistics section */}
