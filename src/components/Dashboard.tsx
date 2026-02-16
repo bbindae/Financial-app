@@ -5,6 +5,7 @@ import { SummaryStats } from './SummaryStats';
 import { MonthlyChart } from './MonthlyChart';
 import { Modal } from './Modal';
 import { ImportFromSheets } from './ImportFromSheets';
+import WatchList from './WatchList';
 import { useTransactions } from '../hooks/useTransactions';
 import { useAuth } from '../hooks/useAuth';
 import { Transaction } from '../types/Transaction';
@@ -237,6 +238,11 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Watch List section - Real-time stock prices */}
+        <div className="mb-6">
+          <WatchList userId={currentUser?.uid} />
+        </div>
 
         {/* Main content area with transaction table and analytics */}
         <div className="mb-6">
