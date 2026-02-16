@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useWatchList } from '../hooks/useWatchList';
 
 interface WatchListProps {
@@ -8,7 +8,23 @@ interface WatchListProps {
 const WatchList: React.FC<WatchListProps> = ({ userId }) => {
   const [newSymbol, setNewSymbol] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const { items, quotes, loading, error, addSymbol, removeSymbol } = useWatchList(userId);
+
+  // Sort items by symbol
+  const sortedItems = useMemo(() => {
+    return [...items].sort((a, b) => {
+      if (sortOrder === 'asc') {
+        return a.symbol.localeCompare(b.symbol);
+      } else {
+        return b.symbol.localeCompare(a.symbol);
+      }
+    });
+  }, [items, sortOrder]);
+
+  const toggleSort = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+  };
 
   const handleAddSymbol = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,8 +133,17 @@ const WatchList: React.FC<WatchListProps> = ({ userId }) => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Symbol
+                <th 
+                  className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                  onClick={toggleSort}
+                  title="Click to sort"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>Symbol</span>
+                    <span className="text-gray-400">
+                      {sortOrder === 'asc' ? '▲' : '▼'}
+                    </span>
+                  </div>
                 </th>
                 <th className="px-6 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Price
@@ -138,7 +163,7 @@ const WatchList: React.FC<WatchListProps> = ({ userId }) => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {items.map((item) => {
+              {sortedItems.map((item) => {
                 const quote = quotes.get(item.symbol);
                 return (
                   <tr key={item.id} className="hover:bg-gray-50 transition-colors">
