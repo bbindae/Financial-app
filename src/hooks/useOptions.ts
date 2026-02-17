@@ -12,7 +12,7 @@ import {
 } from '../utils/optionCalculations';
 import { isMarketOpen } from '../utils/marketHours';
 
-const OPTION_PRICE_INTERVAL = 60 * 1000; // 60 seconds (1 minute)
+const OPTION_PRICE_INTERVAL = 30 * 1000; // 30 seconds
 
 interface UseOptionsReturn {
   options: OptionWithPricing[];
@@ -108,7 +108,8 @@ export const useOptions = (userId: string | undefined): UseOptionsReturn => {
       priceData?.bid,
       priceData?.ask,
       priceData?.lastPrice,
-      effectiveClosingPrice || option.optionPrice
+      effectiveClosingPrice || option.optionPrice,
+      option.optionType
     );
 
     const currentValue = calculateCurrent(
@@ -352,7 +353,7 @@ export const useOptions = (userId: string | undefined): UseOptionsReturn => {
 
     // Start new interval
     priceIntervalRef.current = setInterval(async () => {
-      console.log('Polling option prices (2-minute interval)...');
+      console.log('Polling option prices (30-second interval)...');
       const basicOptions: Option[] = options.map(opt => ({
         id: opt.id,
         userId: opt.userId,

@@ -31,6 +31,8 @@ interface YahooQuoteResponse {
 class YahooFinanceService {
   private closePriceCache: Map<string, { price: number; timestamp: number }> = new Map();
   private readonly CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in ms
+  private optionQuoteCache: Map<string, { data: any; timestamp: number }> = new Map();
+  private readonly OPTION_QUOTE_CACHE_DURATION = 30 * 1000; // 30 seconds
 
   /**
    * Get the previous closing price for an option symbol
@@ -246,6 +248,14 @@ class YahooFinanceService {
     volume?: number;
     openInterest?: number;
   }> {
+    // Check option quote cache (30s throttle)
+    const cacheKey = `${symbol}|${expirationDate}|${strikePrice}|${optionType}`;
+    const cached = this.optionQuoteCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < this.OPTION_QUOTE_CACHE_DURATION) {
+      console.log(`Yahoo Finance: Using cached option quote for ${cacheKey}`);
+      return cached.data;
+    }
+
     try {
       // Convert expiration date to Unix timestamp (UTC midnight to match Yahoo's format)
       const expirationTimestamp = Math.floor(new Date(expirationDate + 'T00:00:00Z').getTime() / 1000);
@@ -302,7 +312,7 @@ class YahooFinanceService {
 
       console.log('Yahoo Finance: Found matching option:', matchingOption);
 
-      return {
+      const quoteResult = {
         bid: matchingOption.bid || undefined,
         ask: matchingOption.ask || undefined,
         lastPrice: matchingOption.lastPrice || undefined,
@@ -311,6 +321,8 @@ class YahooFinanceService {
         volume: matchingOption.volume || undefined,
         openInterest: matchingOption.openInterest || undefined
       };
+      this.optionQuoteCache.set(cacheKey, { data: quoteResult, timestamp: Date.now() });
+      return quoteResult;
     } catch (error) {
       console.error(`Failed to fetch option quote for ${symbol}:`, error);
       return {};
@@ -345,14 +357,21 @@ class YahooFinanceService {
     });
 
     // Fetch all groups in parallel — each group = 1 API call
-    // Response cache: avoid duplicate fetch for same symbol+expiration
+    // Response cache: avoid duplicate fetch for same symbol+expiration (30s throttle)
     const chainCache = new Map<string, any>();
 
     const groupPromises = Array.from(grouped.entries()).map(async ([key, groupOptions]) => {
       const [symbol, expirationDate] = key.split('|');
 
-      // Fetch option chain once per group
+      // Check instance-level cache first (30s throttle)
+      const chainCacheKey = `chain|${key}`;
+      const cachedChain = this.optionQuoteCache.get(chainCacheKey);
       let chainData: any = chainCache.get(key);
+      if (!chainData && cachedChain && Date.now() - cachedChain.timestamp < this.OPTION_QUOTE_CACHE_DURATION) {
+        chainData = cachedChain.data;
+        chainCache.set(key, chainData);
+        console.log(`Yahoo Finance: Using cached chain for ${key}`);
+      }
       if (!chainData) {
         const expirationTimestamp = Math.floor(new Date(expirationDate + 'T00:00:00Z').getTime() / 1000);
         const url = `${YAHOO_OPTIONS_URL}?symbol=${encodeURIComponent(symbol)}&date=${expirationTimestamp}`;
@@ -361,6 +380,7 @@ class YahooFinanceService {
           if (response.ok) {
             chainData = await response.json();
             chainCache.set(key, chainData);
+            this.optionQuoteCache.set(chainCacheKey, { data: chainData, timestamp: Date.now() });
           }
         } catch (error) {
           console.error(`Failed to fetch option chain for ${key}:`, error);

@@ -12,6 +12,8 @@ class FinnhubService {
   private isConnecting = false;
   private lastConnectTime = 0;
   private readonly MIN_STABLE_DURATION = 10000; // Connection must last 10s to be considered stable
+  private quoteCache: Map<string, { data: any; timestamp: number }> = new Map();
+  private readonly QUOTE_CACHE_DURATION = 30 * 1000; // 30 seconds
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
@@ -156,8 +158,15 @@ class FinnhubService {
     this.subscribers.clear();
   }
 
-  // REST API fallback for initial quote
+  // REST API fallback for initial quote (cached for 30 seconds)
   async getQuote(symbol: string): Promise<any> {
+    // Check cache first
+    const cached = this.quoteCache.get(symbol);
+    if (cached && Date.now() - cached.timestamp < this.QUOTE_CACHE_DURATION) {
+      console.log(`Finnhub: Using cached quote for ${symbol}`);
+      return cached.data;
+    }
+
     try {
       const response = await fetch(
         `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${this.apiKey}`
@@ -167,7 +176,9 @@ class FinnhubService {
         throw new Error(`Failed to fetch quote for ${symbol}`);
       }
       
-      return await response.json();
+      const data = await response.json();
+      this.quoteCache.set(symbol, { data, timestamp: Date.now() });
+      return data;
     } catch (error) {
       console.error('Error fetching quote:', error);
       throw error;

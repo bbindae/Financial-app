@@ -10,7 +10,8 @@ export function calculateCost(optionPrice: number, quantity: number): number {
 
 /**
  * Calculate current value of option position
- * Priority: (bid + ask) / 2 → lastPrice → closingPrice
+ * Sell Put (sell to open): ask price → lastPrice → closingPrice
+ * Buy Call/Put (buy to open): bid price → lastPrice → closingPrice
  * Apply sign based on option type
  */
 export function calculateCurrent(
@@ -23,17 +24,24 @@ export function calculateCurrent(
 ): number {
   let price = 0;
 
-  // Priority 1: (bid + ask) / 2
-  if (bid !== undefined && ask !== undefined && bid > 0 && ask > 0) {
-    price = (bid + ask) / 2;
-  }
-  // Priority 2: lastPrice
-  else if (lastPrice !== undefined && lastPrice > 0) {
-    price = lastPrice;
-  }
-  // Priority 3: closingPrice
-  else if (closingPrice !== undefined && closingPrice > 0) {
-    price = closingPrice;
+  if (optionType === 'SELL_PUT') {
+    // Sell to open / Put: use ask price (cost to buy back)
+    if (ask !== undefined && ask > 0) {
+      price = ask;
+    } else if (lastPrice !== undefined && lastPrice > 0) {
+      price = lastPrice;
+    } else if (closingPrice !== undefined && closingPrice > 0) {
+      price = closingPrice;
+    }
+  } else {
+    // Buy to open / Call, Put: use bid price (what you can sell for)
+    if (bid !== undefined && bid > 0) {
+      price = bid;
+    } else if (lastPrice !== undefined && lastPrice > 0) {
+      price = lastPrice;
+    } else if (closingPrice !== undefined && closingPrice > 0) {
+      price = closingPrice;
+    }
   }
 
   const value = price * quantity * 100;
@@ -131,22 +139,28 @@ export function buildYahooOptionSymbol(
 
 /**
  * Get the appropriate price source for current value calculation
+ * Sell Put: ask → lastPrice → closingPrice
+ * Buy Call/Put: bid → lastPrice → closingPrice
  */
 export function getCurrentPriceForCalculation(
   bid?: number,
   ask?: number,
   lastPrice?: number,
-  closingPrice?: number
+  closingPrice?: number,
+  optionType?: OptionType
 ): number {
-  // Priority 1: (bid + ask) / 2
-  if (bid !== undefined && ask !== undefined && bid > 0 && ask > 0) {
-    return (bid + ask) / 2;
+  if (optionType === 'SELL_PUT') {
+    // Sell to open / Put: use ask price
+    if (ask !== undefined && ask > 0) return ask;
+  } else {
+    // Buy to open / Call, Put: use bid price
+    if (bid !== undefined && bid > 0) return bid;
   }
-  // Priority 2: lastPrice
+  // Fallback: lastPrice
   if (lastPrice !== undefined && lastPrice > 0) {
     return lastPrice;
   }
-  // Priority 3: closingPrice
+  // Fallback: closingPrice
   if (closingPrice !== undefined && closingPrice > 0) {
     return closingPrice;
   }

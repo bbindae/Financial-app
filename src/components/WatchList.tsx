@@ -32,13 +32,36 @@ interface WatchListProps {
   onAddOption?: () => void;
 }
 
+const EXPANDED_STORAGE_KEY = 'watchlist-expanded-symbols';
+const COLLAPSED_STORAGE_KEY = 'watchlist-collapsed-symbols';
+
+const loadSetFromStorage = (key: string): Set<string> => {
+  try {
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      return new Set(JSON.parse(stored));
+    }
+  } catch (e) {
+    console.warn(`Failed to load ${key} from localStorage:`, e);
+  }
+  return new Set();
+};
+
+const saveSetToStorage = (key: string, set: Set<string>) => {
+  try {
+    localStorage.setItem(key, JSON.stringify([...set]));
+  } catch (e) {
+    console.warn(`Failed to save ${key} to localStorage:`, e);
+  }
+};
+
 const WatchList: React.FC<WatchListProps> = ({ userId, options = [], onDeleteOption, onAddOption }) => {
   const [newSymbol, setNewSymbol] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [expandedSymbols, setExpandedSymbols] = useState<Set<string>>(new Set());
-  const [manuallyCollapsed, setManuallyCollapsed] = useState<Set<string>>(new Set());
+  const [expandedSymbols, setExpandedSymbols] = useState<Set<string>>(() => loadSetFromStorage(EXPANDED_STORAGE_KEY));
+  const [manuallyCollapsed, setManuallyCollapsed] = useState<Set<string>>(() => loadSetFromStorage(COLLAPSED_STORAGE_KEY));
   const { items, quotes, loading, error, addSymbol, removeSymbol } = useWatchList(userId);
 
   // Group options by symbol
@@ -62,15 +85,20 @@ const WatchList: React.FC<WatchListProps> = ({ userId, options = [], onDeleteOpt
     return autoExpanded;
   }, [optionsBySymbol, expandedSymbols, manuallyCollapsed]);
 
-  // Toggle symbol expansion
+  // Toggle symbol expansion (persisted to localStorage)
   const toggleSymbolExpansion = (symbol: string) => {
     const isCurrentlyExpanded = expandedSymbolsState.has(symbol);
     if (isCurrentlyExpanded) {
       // Collapse: add to manually collapsed, remove from expanded
-      setManuallyCollapsed(prev => new Set(prev).add(symbol));
+      setManuallyCollapsed(prev => {
+        const next = new Set(prev).add(symbol);
+        saveSetToStorage(COLLAPSED_STORAGE_KEY, next);
+        return next;
+      });
       setExpandedSymbols(prev => {
         const next = new Set(prev);
         next.delete(symbol);
+        saveSetToStorage(EXPANDED_STORAGE_KEY, next);
         return next;
       });
     } else {
@@ -78,9 +106,14 @@ const WatchList: React.FC<WatchListProps> = ({ userId, options = [], onDeleteOpt
       setManuallyCollapsed(prev => {
         const next = new Set(prev);
         next.delete(symbol);
+        saveSetToStorage(COLLAPSED_STORAGE_KEY, next);
         return next;
       });
-      setExpandedSymbols(prev => new Set(prev).add(symbol));
+      setExpandedSymbols(prev => {
+        const next = new Set(prev).add(symbol);
+        saveSetToStorage(EXPANDED_STORAGE_KEY, next);
+        return next;
+      });
     }
   };
 
