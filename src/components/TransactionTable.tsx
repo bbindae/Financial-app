@@ -36,7 +36,12 @@ const formatDate = (dateString: string): string => {
   return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 };
 
-export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions, onDelete, onImport, onAddTransaction }) => {
+export const TransactionTable: React.FC<TransactionTableProps> = ({ 
+  transactions, 
+  onDelete, 
+  onImport, 
+  onAddTransaction
+}) => {
   // Get current year and month for default filter
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear().toString();
@@ -55,6 +60,12 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
+
+  // Extract only the leading alphabetic characters from symbol (before first number)
+  const getSymbolDisplay = (symbol: string): string => {
+    const match = symbol.match(/^[A-Za-z]+/);
+    return match ? match[0] : symbol;
+  };
 
   // Extract unique years and months from transactions
   const { years, months } = useMemo(() => {
@@ -153,12 +164,6 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions
   };
 
   const hasNonDefaultFilters = selectedYear !== currentYear || selectedMonth !== currentMonth;
-
-  // Extract only the leading alphabetic characters from symbol (before first number)
-  const getSymbolDisplay = (symbol: string): string => {
-    const match = symbol.match(/^[A-Za-z]+/);
-    return match ? match[0] : symbol;
-  };
 
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -303,7 +308,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({ transactions
       
       {sortedTransactions.length === 0 && (
         <div className="text-center py-8 text-gray-500">
-          {transactions.length === 0 
+          {transactions.length === 0
             ? 'No transactions yet. Add your first transaction above.' 
             : 'No transactions match the selected filters.'}
         </div>

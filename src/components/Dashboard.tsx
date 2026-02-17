@@ -5,10 +5,14 @@ import { SummaryStats } from './SummaryStats';
 import { MonthlyChart } from './MonthlyChart';
 import { Modal } from './Modal';
 import { ImportFromSheets } from './ImportFromSheets';
+import { OptionForm } from './OptionForm';
 import WatchList from './WatchList';
 import { useTransactions } from '../hooks/useTransactions';
+import { useOptions } from '../hooks/useOptions';
+import { useWatchList } from '../hooks/useWatchList';
 import { useAuth } from '../hooks/useAuth';
 import { Transaction } from '../types/Transaction';
+import { Option } from '../types/Option';
 import { 
   hasLocalStorageData, 
   isMigrationCompleted, 
@@ -23,11 +27,21 @@ const Dashboard: React.FC = () => {
   // Fetch transactions data and CRUD operations from custom hook
   const { transactions, loading, addTransaction, bulkImportTransactions, deleteTransaction } = useTransactions();
   
+  // Fetch options data and CRUD operations
+  const { currentUser } = useAuth();
+  const { options, loading: optionsLoading, addOption, deleteOption } = useOptions(currentUser?.uid);
+  
+  // Fetch watchlist for option symbol dropdown
+  const { items: watchListItems } = useWatchList(currentUser?.uid);
+  
   // Authentication context for logout functionality
-  const { signOut, currentUser } = useAuth();
+  const { signOut } = useAuth();
   
   // State for controlling the "Add Transaction" modal visibility
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // State for controlling the "Add Option" modal visibility
+  const [isOptionModalOpen, setIsOptionModalOpen] = useState(false);
   
   // State for controlling the "Import from Sheets" modal visibility
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -54,6 +68,15 @@ const Dashboard: React.FC = () => {
   const handleAddTransaction = async (transaction: Omit<Transaction, 'id'>) => {
     await addTransaction(transaction);
     setIsModalOpen(false);
+  };
+
+  /**
+   * Handles adding a new option
+   * Closes the modal after successful addition
+   */
+  const handleAddOption = async (option: Omit<Option, 'id' | 'userId' | 'createdAt'>) => {
+    await addOption(option);
+    setIsOptionModalOpen(false);
   };
 
   /**
@@ -110,7 +133,7 @@ const Dashboard: React.FC = () => {
   };
 
   // Show loading spinner while fetching initial transaction data
-  if (loading) {
+  if (loading || optionsLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-xl">Loading...</div>
@@ -216,14 +239,19 @@ const Dashboard: React.FC = () => {
 
         {/* Watch List section - Real-time stock prices */}
         <div className="mb-6">
-          <WatchList userId={currentUser?.uid} />
+          <WatchList 
+            userId={currentUser?.uid}
+            options={options}
+            onDeleteOption={deleteOption}
+            onAddOption={() => setIsOptionModalOpen(true)}
+          />
         </div>
 
         {/* Transaction History Panel */}
         <div className="mb-6 bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Transaction History</h2>
           <TransactionTable 
-            transactions={transactions} 
+            transactions={transactions}
             onDelete={deleteTransaction}
             onImport={() => setIsImportModalOpen(true)}
             onAddTransaction={() => setIsModalOpen(true)}
@@ -239,6 +267,15 @@ const Dashboard: React.FC = () => {
         {/* Modal for adding individual transactions manually */}
         <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
           <TransactionForm onSubmit={handleAddTransaction} onClose={() => setIsModalOpen(false)} />
+        </Modal>
+
+        {/* Modal for adding option trades */}
+        <Modal isOpen={isOptionModalOpen} onClose={() => setIsOptionModalOpen(false)}>
+          <OptionForm 
+            onSubmit={handleAddOption} 
+            onClose={() => setIsOptionModalOpen(false)}
+            watchListItems={watchListItems}
+          />
         </Modal>
 
         {/* Modal for bulk importing transactions from Google Sheets */}

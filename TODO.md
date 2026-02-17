@@ -6,7 +6,15 @@ The following items are planned future work for the project. If you like, I can 
 
 - [ ] Add "Day of Bible Verse" below the Element Screenshot (show Korean label first, then English)
 - [x] Add a realtime stock tracker and allows to add symbol tracked
-- [ ] Allow to add options with strike price and expiration date and compare them with tracking symbols
+- [x] Allow to add options with strike price and expiration date and compare them with tracking symbols
+  - **Completed: 2026-02-16**
+  - Added comprehensive option trading tracker with real-time pricing
+  - Features: Sell Put, Buy Call, Buy Put support
+  - Real-time pricing: 30-second polling for option prices
+  - Daily closing prices from Yahoo Finance API
+  - Expandable rows in transaction table to show options grouped by symbol
+  - Today's and Total gain/loss calculations with percentages
+  - Integration with watchlist for symbol dropdown selection
 - [ ] Host website, hyukkim.com/financial/options and add this web into it 
 - [ ] Add github workflow to deploy when pull request is merged into main branch
 - [x] Remove symbol duplicate check when entering transactions or importing files
