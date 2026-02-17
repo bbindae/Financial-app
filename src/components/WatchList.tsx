@@ -445,14 +445,6 @@ const WatchList: React.FC<WatchListProps> = ({ userId, options = [], onDeleteOpt
         </div>
       )}
 
-      {/* Info Footer */}
-      {items.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <p className="text-xs text-gray-500 text-center">
-            Prices update in real-time via WebSocket • Data provided by Finnhub
-          </p>
-        </div>
-      )}
     </div>
   );
 };
