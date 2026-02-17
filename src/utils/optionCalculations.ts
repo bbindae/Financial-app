@@ -72,7 +72,7 @@ export function calculateTodayGainLoss(
 /**
  * Calculate total gain/loss since position opened
  * Buy Call/Put: (current - cost)
- * Sell Put: (cost - current)
+ * Sell Put: premium received - buyback cost = cost + currentValue (currentValue is already negative)
  */
 export function calculateTotalGainLoss(
   currentValue: number,
@@ -81,7 +81,9 @@ export function calculateTotalGainLoss(
 ): { amount: number; percent: number } {
   let amount = 0;
   if (optionType === 'SELL_PUT') {
-    amount = cost - currentValue;
+    // currentValue is already negative for SELL_PUT
+    // P&L = premium received + current position value
+    amount = cost + currentValue;
   } else {
     // BUY_CALL or BUY_PUT
     amount = currentValue - cost;

@@ -107,10 +107,13 @@ export const useOptions = (userId: string | undefined): UseOptionsReturn => {
   ): OptionWithPricing => {
     const cost = calculateCost(option.optionPrice, option.quantity);
     
-    // Derive closingPrice from Yahoo's lastPrice - change if not available from cache
-    let effectiveClosingPrice = closingPrice;
-    if (!effectiveClosingPrice && priceData?.lastPrice && priceData?.change !== undefined) {
+    // Derive closingPrice from Yahoo's lastPrice - change (most accurate)
+    // Fall back to cached closingPrice if Yahoo data unavailable
+    let effectiveClosingPrice: number | undefined;
+    if (priceData?.lastPrice && priceData?.change !== undefined) {
       effectiveClosingPrice = priceData.lastPrice - priceData.change;
+    } else if (closingPrice) {
+      effectiveClosingPrice = closingPrice;
     }
 
     // Use original option price as ultimate fallback
