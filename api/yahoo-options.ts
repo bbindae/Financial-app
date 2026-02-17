@@ -53,14 +53,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(503).json({ error: 'Yahoo Finance authentication failed' });
   }
 
-  // Extract the path after /api/yahoo-chart/
-  const pathSegments = req.query.path;
-  const subPath = Array.isArray(pathSegments) ? pathSegments.join('/') : (pathSegments || '');
+  // Get symbol from query parameter
+  const symbol = req.query.symbol;
+  if (!symbol || Array.isArray(symbol)) {
+    return res.status(400).json({ error: 'Missing or invalid symbol parameter' });
+  }
 
-  // Build query string from remaining query params (exclude 'path')
+  // Build query string from remaining query params (exclude 'symbol')
   const queryParams = new URLSearchParams();
   for (const [key, value] of Object.entries(req.query)) {
-    if (key === 'path') continue;
+    if (key === 'symbol') continue;
     if (Array.isArray(value)) {
       value.forEach(v => queryParams.append(key, v));
     } else if (value) {
@@ -69,7 +71,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   queryParams.append('crumb', crumb!);
 
-  const url = `https://query2.finance.yahoo.com/v8/finance/chart/${subPath}?${queryParams.toString()}`;
+  const url = `https://query2.finance.yahoo.com/v7/finance/options/${symbol}?${queryParams.toString()}`;
 
   try {
     const response = await fetch(url, {
@@ -89,7 +91,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const retryAuthed = await ensureAuth();
       if (retryAuthed) {
         queryParams.set('crumb', crumb!);
-        const retryUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${subPath}?${queryParams.toString()}`;
+        const retryUrl = `https://query2.finance.yahoo.com/v7/finance/options/${symbol}?${queryParams.toString()}`;
         const retryRes = await fetch(retryUrl, {
           headers: {
             'Cookie': cookie!,

@@ -45,7 +45,7 @@ class YahooFinanceService {
     }
 
     try {
-      const url = `${YAHOO_BASE_URL}/${optionSymbol}?interval=1d&range=5d`;
+      const url = `${YAHOO_BASE_URL}?symbol=${encodeURIComponent(optionSymbol)}&interval=1d&range=5d`;
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -133,7 +133,7 @@ class YahooFinanceService {
     previousClose: number;
   } | null> {
     try {
-      const url = `${YAHOO_BASE_URL}/${optionSymbol}?interval=1d&range=10d`;
+      const url = `${YAHOO_BASE_URL}?symbol=${encodeURIComponent(optionSymbol)}&interval=1d&range=10d`;
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -247,7 +247,7 @@ class YahooFinanceService {
       // Convert expiration date to Unix timestamp (UTC midnight to match Yahoo's format)
       const expirationTimestamp = Math.floor(new Date(expirationDate + 'T00:00:00Z').getTime() / 1000);
       
-      const url = `${YAHOO_OPTIONS_URL}/${symbol}?date=${expirationTimestamp}`;
+      const url = `${YAHOO_OPTIONS_URL}?symbol=${encodeURIComponent(symbol)}&date=${expirationTimestamp}`;
       console.log('Yahoo Finance: Fetching option chain from:', url);
       
       const response = await fetch(url);

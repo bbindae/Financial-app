@@ -59,9 +59,20 @@ function yahooFinanceProxy(): Plugin {
       return
     }
 
-    const path = req.url || ''
-    const separator = path.includes('?') ? '&' : '?'
-    const url = `${baseUrl}${path}${separator}crumb=${encodeURIComponent(crumb!)}`
+    // Parse query params from the request URL
+    const parsedUrl = new URL(req.url || '', 'http://localhost')
+    const symbol = parsedUrl.searchParams.get('symbol') || ''
+    
+    // Build Yahoo Finance URL with remaining params
+    const yahooParams = new URLSearchParams()
+    parsedUrl.searchParams.forEach((value, key) => {
+      if (key !== 'symbol') {
+        yahooParams.append(key, value)
+      }
+    })
+    yahooParams.append('crumb', encodeURIComponent(crumb!))
+    
+    const url = `${baseUrl}/${symbol}?${yahooParams.toString()}`
 
     try {
       const response = await fetch(url, {
