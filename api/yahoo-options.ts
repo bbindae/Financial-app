@@ -25,6 +25,30 @@ async function ensureAuth(): Promise<boolean> {
   }
 }
 
+// Force re-auth (for 401 retries) — mutex-protected, skips if already refreshed
+async function forceReauth(failedAuthTime: number): Promise<boolean> {
+  // Another request already re-authed since our request was made
+  if (lastAuthTime > failedAuthTime) {
+    return true;
+  }
+
+  // If another request is already re-authenticating, wait for it
+  if (authPromise) {
+    return authPromise;
+  }
+
+  cookie = null;
+  crumb = null;
+  lastAuthTime = 0;
+
+  authPromise = doAuth();
+  try {
+    return await authPromise;
+  } finally {
+    authPromise = null;
+  }
+}
+
 async function doAuth(): Promise<boolean> {
   try {
     const cookieRes = await fetch('https://fc.yahoo.com/', { redirect: 'manual' });
@@ -68,6 +92,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(503).json({ error: 'Yahoo Finance authentication failed' });
   }
 
+  // Capture auth time before request so 401 handler can detect if another request already refreshed
+  const authTimeBeforeRequest = lastAuthTime;
+
   // Get symbol from query parameter
   const symbol = req.query.symbol;
   if (!symbol || Array.isArray(symbol)) {
@@ -96,14 +123,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
     });
 
-    // If 401, retry with fresh auth
+    // If 401, re-auth once via mutex (deduplicates across parallel requests)
     if (response.status === 401) {
       console.log('[Yahoo Proxy] Got 401, re-authenticating...');
-      cookie = null;
-      crumb = null;
-      lastAuthTime = 0;
-
-      const retryAuthed = await ensureAuth();
+      const retryAuthed = await forceReauth(authTimeBeforeRequest);
       if (retryAuthed) {
         queryParams.set('crumb', crumb!);
         const retryUrl = `https://query2.finance.yahoo.com/v7/finance/options/${symbol}?${queryParams.toString()}`;

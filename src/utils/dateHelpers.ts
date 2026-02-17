@@ -26,7 +26,9 @@ export const getMonthKey = (date: string): string => {
 };
 
 export const getWeekKey = (date: string): string => {
-  const parsedDate = parseLocalDate(date);
+  // Handle ISO timestamp format (e.g., "2026-01-02T00:00:00.000Z")
+  const dateStr = date.includes('T') ? date.split('T')[0] : date;
+  const parsedDate = parseLocalDate(dateStr);
   const year = getYear(parsedDate);
   const month = parsedDate.getMonth(); // 0-indexed
   const dayOfMonth = parsedDate.getDate();

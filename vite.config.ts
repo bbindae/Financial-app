@@ -14,8 +14,7 @@ function yahooFinanceProxy(): Plugin {
   const AUTH_TTL = 60 * 60 * 1000 // Re-auth every 1 hour
 
   async function ensureAuth(): Promise<boolean> {
-    const now = Date.now()
-    if (cookie && crumb && now - lastAuthTime < AUTH_TTL) {
+    if (cookie && crumb && Date.now() - lastAuthTime < AUTH_TTL) {
       return true
     }
 
@@ -23,6 +22,30 @@ function yahooFinanceProxy(): Plugin {
     if (authPromise) {
       return authPromise
     }
+
+    authPromise = doAuth()
+    try {
+      return await authPromise
+    } finally {
+      authPromise = null
+    }
+  }
+
+  // Force re-auth (for 401 retries) — mutex-protected, skips if already refreshed
+  async function forceReauth(failedAuthTime: number): Promise<boolean> {
+    // Another request already re-authed since our request was made
+    if (lastAuthTime > failedAuthTime) {
+      return true
+    }
+
+    // If another request is already re-authenticating, wait for it
+    if (authPromise) {
+      return authPromise
+    }
+
+    cookie = null
+    crumb = null
+    lastAuthTime = 0
 
     authPromise = doAuth()
     try {
@@ -74,6 +97,9 @@ function yahooFinanceProxy(): Plugin {
       return
     }
 
+    // Capture auth time before request, for 401 dedup check
+    const authTimeBeforeRequest = lastAuthTime
+
     // Parse query params from the request URL
     const parsedUrl = new URL(req.url || '', 'http://localhost')
     const symbol = parsedUrl.searchParams.get('symbol') || ''
@@ -97,14 +123,10 @@ function yahooFinanceProxy(): Plugin {
         },
       })
 
-      // If 401, invalidate auth and retry once
+      // If 401, re-auth once via mutex (deduplicates across parallel requests)
       if (response.status === 401) {
         console.log('[Yahoo Proxy] Got 401, re-authenticating...')
-        cookie = null
-        crumb = null
-        lastAuthTime = 0
-        authPromise = null
-        const retryAuthed = await ensureAuth()
+        const retryAuthed = await forceReauth(authTimeBeforeRequest)
         if (retryAuthed) {
           yahooParams.set('crumb', encodeURIComponent(crumb!))
           const retryUrl = `${baseUrl}/${symbol}?${yahooParams.toString()}`
