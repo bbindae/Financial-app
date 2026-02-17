@@ -10,6 +10,7 @@ function yahooFinanceProxy(): Plugin {
   let cookie: string | null = null
   let crumb: string | null = null
   let lastAuthTime = 0
+  let authPromise: Promise<boolean> | null = null
   const AUTH_TTL = 60 * 60 * 1000 // Re-auth every 1 hour
 
   async function ensureAuth(): Promise<boolean> {
@@ -18,6 +19,20 @@ function yahooFinanceProxy(): Plugin {
       return true
     }
 
+    // If another request is already authenticating, wait for it
+    if (authPromise) {
+      return authPromise
+    }
+
+    authPromise = doAuth()
+    try {
+      return await authPromise
+    } finally {
+      authPromise = null
+    }
+  }
+
+  async function doAuth(): Promise<boolean> {
     try {
       // Step 1: Get session cookies from Yahoo
       const cookieRes = await fetch('https://fc.yahoo.com/', { redirect: 'manual' })
@@ -38,7 +53,7 @@ function yahooFinanceProxy(): Plugin {
       }
 
       crumb = await crumbRes.text()
-      lastAuthTime = now
+      lastAuthTime = Date.now()
       console.log('[Yahoo Auth] Successfully obtained cookie + crumb')
       return true
     } catch (error) {
@@ -88,9 +103,11 @@ function yahooFinanceProxy(): Plugin {
         cookie = null
         crumb = null
         lastAuthTime = 0
+        authPromise = null
         const retryAuthed = await ensureAuth()
         if (retryAuthed) {
-          const retryUrl = `${baseUrl}${path}${separator}crumb=${encodeURIComponent(crumb!)}`
+          yahooParams.set('crumb', encodeURIComponent(crumb!))
+          const retryUrl = `${baseUrl}/${symbol}?${yahooParams.toString()}`
           const retryRes = await fetch(retryUrl, {
             headers: {
               'Cookie': cookie!,

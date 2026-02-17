@@ -84,24 +84,6 @@ export const useOptions = (userId: string | undefined): UseOptionsReturn => {
     console.log('Fetched and cached closing prices:', prices.size);
   }, []);
 
-  // Fetch current option prices from Yahoo Finance
-  const fetchOptionPrices = useCallback(async (optionsList: Option[]): Promise<Map<string, any>> => {
-    console.log('useOptions: Fetching option prices from Yahoo Finance for', optionsList.length, 'options');
-
-    const optionsData = optionsList.map(option => ({
-      id: option.id,
-      symbol: option.symbol,
-      expirationDate: option.expirationDate,
-      strikePrice: option.strikePrice,
-      optionType: (option.optionType === 'BUY_CALL' ? 'call' : 'put') as 'call' | 'put'
-    }));
-
-    const priceData = await YahooFinanceService.batchGetOptionQuotes(optionsData);
-    console.log('useOptions: Received price data for', priceData.size, 'options');
-    
-    return priceData;
-  }, []);
-
   // Calculate option with pricing data
   const calculateOptionWithPricing = useCallback((
     option: Option,
@@ -142,11 +124,9 @@ export const useOptions = (userId: string | undefined): UseOptionsReturn => {
     let isLastTradingDay = false;
 
     if (marketClosed) {
-      // Market is closed (weekend/holiday/pre-market/post-market)
       isLastTradingDay = true;
 
       if (priceData?.change !== undefined && priceData?.change !== null && priceData.change !== 0) {
-        // Yahoo option chain returned a non-zero change (last trading day's change)
         const changePerContract = priceData.change * option.quantity * 100;
         const amount = option.optionType === 'SELL_PUT' ? -changePerContract : changePerContract;
         const percent = priceData.percentChange !== undefined
@@ -154,7 +134,6 @@ export const useOptions = (userId: string | undefined): UseOptionsReturn => {
         todayGainLoss = { amount, percent };
       } else if (priceData?.lastPrice && effectiveClosingPrice && effectiveClosingPrice > 0
                  && Math.abs(priceData.lastPrice - effectiveClosingPrice) > 0.001) {
-        // Yahoo returned change=0 but we have a cached closing price that differs from lastPrice
         todayGainLoss = calculateTodayGainLoss(
           priceData.lastPrice,
           effectiveClosingPrice,
@@ -162,19 +141,14 @@ export const useOptions = (userId: string | undefined): UseOptionsReturn => {
           option.optionType
         );
       }
-      // else: no prior data or prices are identical → $0 (genuinely no change or no data)
     } else {
-      // Market is open or it's a regular trading day
-      // Priority 1: Use Yahoo's change/percentChange directly from option chain
       if (priceData?.change !== undefined && priceData?.change !== null && currentPrice > 0) {
         const changePerContract = priceData.change * option.quantity * 100;
         const amount = option.optionType === 'SELL_PUT' ? -changePerContract : changePerContract;
         const percent = priceData.percentChange !== undefined
           ? (option.optionType === 'SELL_PUT' ? -priceData.percentChange : priceData.percentChange) : 0;
         todayGainLoss = { amount, percent };
-      }
-      // Priority 2: Calculate from cached closing price vs current price
-      else if (effectiveClosingPrice && effectiveClosingPrice > 0 && currentPrice > 0) {
+      } else if (effectiveClosingPrice && effectiveClosingPrice > 0 && currentPrice > 0) {
         todayGainLoss = calculateTodayGainLoss(
           currentPrice,
           effectiveClosingPrice,
@@ -208,25 +182,20 @@ export const useOptions = (userId: string | undefined): UseOptionsReturn => {
     };
   }, []);
 
-  // Update options with pricing
-  const updateOptionsWithPricing = useCallback(async (optionsList: Option[]) => {
+  // Core logic: apply price data to options and set state
+  const updateOptionsWithPricingData = useCallback(async (optionsList: Option[], priceData: Map<string, any>) => {
     if (optionsList.length === 0) {
       setOptions([]);
       return;
     }
 
-    // Fetch current prices from Yahoo Finance option chain
-    const priceData = await fetchOptionPrices(optionsList);
-
-    // Check if market is currently open
     const marketOpen = isMarketOpen();
     const marketClosed = !marketOpen;
     if (marketClosed) {
       console.log('Market is currently closed. Showing last trading day data.');
     }
 
-    // For each option, save derived closing price to Firestore if we don't have one
-    // This ensures we have data for future sessions
+    // Derive closing prices from option chain data and save to Firestore
     const service = optionServiceRef.current;
     for (const option of optionsList) {
       const yahooSymbol = buildYahooOptionSymbol(
@@ -240,24 +209,17 @@ export const useOptions = (userId: string | undefined): UseOptionsReturn => {
 
       if (prices?.lastPrice && prices.lastPrice > 0 && service) {
         if (prices.change !== undefined && prices.change !== null && prices.change !== 0) {
-          // Yahoo has active change data - derive and save the previous close
           const previousClose = prices.lastPrice - prices.change;
           if (previousClose > 0 && previousClose !== cachedClosing) {
             closingPricesRef.current.set(yahooSymbol, previousClose);
             service.saveClosingPrice(yahooSymbol, previousClose).catch(e =>
               console.warn('Failed to save derived closing price:', e)
             );
-            console.log(`Saved derived closing price for ${yahooSymbol}: $${previousClose.toFixed(2)}`);
           }
         } else if (!cachedClosing) {
-          // No cached closing price at all - save current lastPrice as baseline to Firestore
-          // DON'T update closingPricesRef.current here! If we do, calculateOptionWithPricing
-          // will compare lastPrice against itself (the baseline we just saved) and always get $0.
-          // The baseline will be loaded from Firestore on the NEXT session.
           service.saveClosingPrice(yahooSymbol, prices.lastPrice).catch(e =>
             console.warn('Failed to save baseline closing price:', e)
           );
-          console.log(`Saved baseline closing price for ${yahooSymbol}: $${prices.lastPrice.toFixed(2)} (for next session)`);
         }
       }
     }
@@ -276,7 +238,7 @@ export const useOptions = (userId: string | undefined): UseOptionsReturn => {
       return calculateOptionWithPricing(option, prices, closingPrice, marketClosed);
     });
 
-    // Fallback: For options still showing $0 during closed market, try chart API with longer range
+    // Fallback: For options still showing $0 during closed market, try chart API (all in parallel)
     if (marketClosed) {
       const zeroGainOptions = optionsWithPricing.filter(
         opt => (opt.todayGainLoss?.amount ?? 0) === 0 && opt.lastPrice && opt.lastPrice > 0
@@ -284,12 +246,9 @@ export const useOptions = (userId: string | undefined): UseOptionsReturn => {
 
       if (zeroGainOptions.length > 0) {
         console.log(`Trying chart API fallback for ${zeroGainOptions.length} options with $0 gain/loss...`);
-        const symbolMap = new Map<string, OptionWithPricing>();
         const yahooSymbols: string[] = [];
         for (const opt of zeroGainOptions) {
-          const sym = buildYahooOptionSymbol(opt.symbol, opt.strikePrice, opt.expirationDate, opt.optionType);
-          symbolMap.set(sym, opt);
-          yahooSymbols.push(sym);
+          yahooSymbols.push(buildYahooOptionSymbol(opt.symbol, opt.strikePrice, opt.expirationDate, opt.optionType));
         }
 
         const chartChanges = await YahooFinanceService.batchGetLastTradingDayChange(yahooSymbols);
@@ -302,7 +261,6 @@ export const useOptions = (userId: string | undefined): UseOptionsReturn => {
               const changePerContract = chartData.change * opt.quantity * 100;
               const amount = opt.optionType === 'SELL_PUT' ? -changePerContract : changePerContract;
               const percent = opt.optionType === 'SELL_PUT' ? -chartData.percentChange : chartData.percentChange;
-              // Also save the previousClose to cache for future use
               if (service && chartData.previousClose > 0) {
                 closingPricesRef.current.set(sym, chartData.previousClose);
                 service.saveClosingPrice(sym, chartData.previousClose).catch(e =>
@@ -322,7 +280,26 @@ export const useOptions = (userId: string | undefined): UseOptionsReturn => {
     }
 
     setOptions(optionsWithPricing);
-  }, [fetchOptionPrices, calculateOptionWithPricing]);
+  }, [calculateOptionWithPricing]);
+
+  // Update options with pricing (fetches quotes then applies)
+  const updateOptionsWithPricing = useCallback(async (optionsList: Option[]) => {
+    if (optionsList.length === 0) {
+      setOptions([]);
+      return;
+    }
+
+    const optionsData = optionsList.map(option => ({
+      id: option.id,
+      symbol: option.symbol,
+      expirationDate: option.expirationDate,
+      strikePrice: option.strikePrice,
+      optionType: (option.optionType === 'BUY_CALL' ? 'call' : 'put') as 'call' | 'put'
+    }));
+
+    const priceData = await YahooFinanceService.batchGetOptionQuotes(optionsData);
+    await updateOptionsWithPricingData(optionsList, priceData);
+  }, [updateOptionsWithPricingData]);
 
   // Subscribe to Firestore options
   useEffect(() => {
@@ -338,12 +315,23 @@ export const useOptions = (userId: string | undefined): UseOptionsReturn => {
 
     const unsubscribe = service.subscribeToChanges(async (newOptions) => {
       console.log('Options: Received options from Firestore:', newOptions.length);
-      
-      // Always fetch closing prices (loads from Firestore cache, refreshes from Yahoo if stale)
-      await fetchClosingPrices(newOptions);
 
-      // Always fetch fresh current prices from Yahoo Finance
-      await updateOptionsWithPricing(newOptions);
+      // Fetch Firestore cached closing prices AND Yahoo option quotes in parallel
+      const optionsData = newOptions.map(option => ({
+        id: option.id,
+        symbol: option.symbol,
+        expirationDate: option.expirationDate,
+        strikePrice: option.strikePrice,
+        optionType: (option.optionType === 'BUY_CALL' ? 'call' : 'put') as 'call' | 'put'
+      }));
+
+      const [, priceData] = await Promise.all([
+        fetchClosingPrices(newOptions),
+        YahooFinanceService.batchGetOptionQuotes(optionsData)
+      ]);
+
+      // Now compute display values with both closing prices and live quotes ready
+      await updateOptionsWithPricingData(newOptions, priceData);
       
       setLoading(false);
     });
@@ -351,7 +339,7 @@ export const useOptions = (userId: string | undefined): UseOptionsReturn => {
     return () => {
       unsubscribe();
     };
-  }, [userId, fetchClosingPrices, updateOptionsWithPricing]);
+  }, [userId, fetchClosingPrices, updateOptionsWithPricingData]);
 
   // Set up 2-minute polling for option prices (reduced from 30s to avoid rate limits)
   useEffect(() => {

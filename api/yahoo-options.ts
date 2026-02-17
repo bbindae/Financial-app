@@ -3,6 +3,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 let cookie: string | null = null;
 let crumb: string | null = null;
 let lastAuthTime = 0;
+let authPromise: Promise<boolean> | null = null;
 const AUTH_TTL = 60 * 60 * 1000; // 1 hour
 
 async function ensureAuth(): Promise<boolean> {
@@ -11,6 +12,20 @@ async function ensureAuth(): Promise<boolean> {
     return true;
   }
 
+  // If another request is already authenticating, wait for it
+  if (authPromise) {
+    return authPromise;
+  }
+
+  authPromise = doAuth();
+  try {
+    return await authPromise;
+  } finally {
+    authPromise = null;
+  }
+}
+
+async function doAuth(): Promise<boolean> {
   try {
     const cookieRes = await fetch('https://fc.yahoo.com/', { redirect: 'manual' });
     const setCookieHeader = cookieRes.headers.get('set-cookie') || '';
@@ -29,7 +44,7 @@ async function ensureAuth(): Promise<boolean> {
     }
 
     crumb = await crumbRes.text();
-    lastAuthTime = now;
+    lastAuthTime = Date.now();
     console.log('[Yahoo Auth] Successfully obtained cookie + crumb');
     return true;
   } catch (error) {

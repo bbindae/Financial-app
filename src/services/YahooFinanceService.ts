@@ -102,21 +102,29 @@ class YahooFinanceService {
    */
   async batchGetPreviousClose(optionSymbols: string[]): Promise<Map<string, number>> {
     const results = new Map<string, number>();
+    const uncached: string[] = [];
 
-    // Fetch all in parallel with a reasonable delay between requests
-    const promises = optionSymbols.map((symbol, index) =>
-      new Promise<void>(resolve => {
-        setTimeout(async () => {
-          const price = await this.getPreviousClose(symbol);
-          if (price !== null) {
-            results.set(symbol, price);
-          }
-          resolve();
-        }, index * 100); // 100ms delay between requests to avoid rate limiting
-      })
-    );
+    // Separate cached vs uncached
+    for (const symbol of optionSymbols) {
+      const cached = this.closePriceCache.get(symbol);
+      if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+        results.set(symbol, cached.price);
+      } else {
+        uncached.push(symbol);
+      }
+    }
 
-    await Promise.all(promises);
+    // Fetch all uncached in parallel (no artificial delay)
+    if (uncached.length > 0) {
+      const promises = uncached.map(async (symbol) => {
+        const price = await this.getPreviousClose(symbol);
+        if (price !== null) {
+          results.set(symbol, price);
+        }
+      });
+      await Promise.all(promises);
+    }
+
     return results;
   }
 
@@ -175,17 +183,12 @@ class YahooFinanceService {
   }>> {
     const results = new Map();
 
-    const promises = optionSymbols.map((symbol, index) =>
-      new Promise<void>(resolve => {
-        setTimeout(async () => {
-          const data = await this.getLastTradingDayChange(symbol);
-          if (data) {
-            results.set(symbol, data);
-          }
-          resolve();
-        }, index * 100);
-      })
-    );
+    const promises = optionSymbols.map(async (symbol) => {
+      const data = await this.getLastTradingDayChange(symbol);
+      if (data) {
+        results.set(symbol, data);
+      }
+    });
 
     await Promise.all(promises);
     return results;
@@ -316,6 +319,7 @@ class YahooFinanceService {
 
   /**
    * Batch fetch option quotes for multiple options
+   * Groups by symbol+expiration to minimize API calls, fetches groups in parallel
    * @param options - Array of option details
    * @returns Map of option ID to quote data
    */
@@ -340,28 +344,73 @@ class YahooFinanceService {
       grouped.get(key)!.push(opt);
     });
 
-    // Fetch each group with delay to avoid rate limiting
-    let delay = 0;
-    for (const [key, groupOptions] of grouped.entries()) {
-      await new Promise<void>(resolve => {
-        setTimeout(async () => {
-          const [symbol, expirationDate] = key.split('|');
-          
-          for (const opt of groupOptions) {
-            const quote = await this.getOptionQuote(
-              symbol,
-              expirationDate,
-              opt.strikePrice,
-              opt.optionType
-            );
-            results.set(opt.id, quote);
-          }
-          resolve();
-        }, delay);
-      });
-      delay += 500; // 500ms delay between different expiration dates
-    }
+    // Fetch all groups in parallel — each group = 1 API call
+    // Response cache: avoid duplicate fetch for same symbol+expiration
+    const chainCache = new Map<string, any>();
 
+    const groupPromises = Array.from(grouped.entries()).map(async ([key, groupOptions]) => {
+      const [symbol, expirationDate] = key.split('|');
+
+      // Fetch option chain once per group
+      let chainData: any = chainCache.get(key);
+      if (!chainData) {
+        const expirationTimestamp = Math.floor(new Date(expirationDate + 'T00:00:00Z').getTime() / 1000);
+        const url = `${YAHOO_OPTIONS_URL}?symbol=${encodeURIComponent(symbol)}&date=${expirationTimestamp}`;
+        try {
+          const response = await fetch(url);
+          if (response.ok) {
+            chainData = await response.json();
+            chainCache.set(key, chainData);
+          }
+        } catch (error) {
+          console.error(`Failed to fetch option chain for ${key}:`, error);
+        }
+      }
+
+      if (!chainData) return;
+
+      const result = chainData.optionChain?.result?.[0];
+      if (!result?.options?.[0]) return;
+
+      const optionChain = result.options[0];
+
+      // Match each option in the group from the single chain response
+      for (const opt of groupOptions) {
+        const optionArray = opt.optionType === 'call' ? optionChain.calls : optionChain.puts;
+        if (!optionArray || !Array.isArray(optionArray)) {
+          results.set(opt.id, {});
+          continue;
+        }
+
+        let matchingOption = optionArray.find((o: any) => Math.abs(o.strike - opt.strikePrice) < 0.01);
+        if (!matchingOption) {
+          let minDiff = Infinity;
+          for (const o of optionArray) {
+            const diff = Math.abs(o.strike - opt.strikePrice);
+            if (diff < minDiff && diff <= 2.5) {
+              minDiff = diff;
+              matchingOption = o;
+            }
+          }
+        }
+
+        if (matchingOption) {
+          results.set(opt.id, {
+            bid: matchingOption.bid || undefined,
+            ask: matchingOption.ask || undefined,
+            lastPrice: matchingOption.lastPrice || undefined,
+            change: matchingOption.change,
+            percentChange: matchingOption.percentChange,
+            volume: matchingOption.volume || undefined,
+            openInterest: matchingOption.openInterest || undefined
+          });
+        } else {
+          results.set(opt.id, {});
+        }
+      }
+    });
+
+    await Promise.all(groupPromises);
     return results;
   }
 }
