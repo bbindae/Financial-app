@@ -39,7 +39,7 @@ export const MonthlyChart: React.FC<MonthlyChartProps> = ({ transactions }) => {
               tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
             />
             <Tooltip 
-              formatter={(value: number) => formatCurrency(value)}
+              formatter={(value) => formatCurrency(value as number)}
               contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc' }}
             />
             <ReferenceLine y={0} stroke="#000" strokeWidth={2} />

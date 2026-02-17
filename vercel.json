@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/yahoo-options/:path*",
+      "destination": "/api/yahoo-options/:path*"
+    },
+    {
+      "source": "/api/yahoo-chart/:path*",
+      "destination": "/api/yahoo-chart/:path*"
+    }
+  ]
+}

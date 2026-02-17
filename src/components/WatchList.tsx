@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useWatchList } from '../hooks/useWatchList';
 import { OptionWithPricing } from '../types/Option';
 import { formatOptionSymbol } from '../utils/optionCalculations';
+import { isMarketOpen } from '../utils/marketHours';
 
 /**
  * Check if an expiration date falls within the current week (Mon-Fri)
@@ -331,7 +332,10 @@ const WatchList: React.FC<WatchListProps> = ({ userId, options = [], onDeleteOpt
                                   <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 w-[20%]">Option</th>
                                   <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 w-[13%]">Cost</th>
                                   <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 w-[10%]">Qty</th>
-                                  <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 w-[17%]"><div>Today's</div><div>Gain/Loss</div></th>
+                                  <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 w-[17%]">
+                                    <div>{!isMarketOpen() ? "Last Day's" : "Today's"}</div>
+                                    <div>Gain/Loss</div>
+                                  </th>
                                   <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 w-[17%]"><div>Total</div><div>Gain/Loss</div></th>
                                   <th className="px-3 py-2 text-right text-xs font-semibold text-gray-700 w-[15%]">Current</th>
                                   <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 w-[8%]">Action</th>
@@ -400,6 +404,9 @@ const WatchList: React.FC<WatchListProps> = ({ userId, options = [], onDeleteOpt
                                       }`}>
                                         <div>{formatCurrency(todayAmount)}</div>
                                         <div className="text-xs opacity-75">({todayPercent.toFixed(2)}%)</div>
+                                        {option.isLastTradingDay && (
+                                          <div className="text-xs text-gray-400 italic">Last trading day</div>
+                                        )}
                                       </td>
                                       <td className={`px-3 py-2 text-xs text-right font-semibold ${
                                         totalAmount >= 0 ? 'text-green-600' : 'text-red-600'

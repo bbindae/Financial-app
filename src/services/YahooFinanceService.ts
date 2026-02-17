@@ -121,6 +121,77 @@ class YahooFinanceService {
   }
 
   /**
+   * Get the last trading day's price change for an option symbol
+   * Uses chart API to get last 2 trading days' closing prices and calculates change
+   * Useful when market is closed (weekends/holidays)
+   * @returns { change, percentChange, lastClose, previousClose } or null
+   */
+  async getLastTradingDayChange(optionSymbol: string): Promise<{
+    change: number;
+    percentChange: number;
+    lastClose: number;
+    previousClose: number;
+  } | null> {
+    try {
+      const url = `${YAHOO_BASE_URL}/${optionSymbol}?interval=1d&range=10d`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data: YahooQuoteResponse = await response.json();
+      if (data.chart.error) return null;
+
+      const result = data.chart.result?.[0];
+      if (!result?.indicators?.quote?.[0]?.close) return null;
+
+      const closes = result.indicators.quote[0].close.filter(c => c !== null) as number[];
+      if (closes.length < 2) return null;
+
+      const lastClose = closes[closes.length - 1];
+      const previousClose = closes[closes.length - 2];
+
+      if (lastClose <= 0 || previousClose <= 0) return null;
+
+      const change = lastClose - previousClose;
+      const percentChange = (change / previousClose) * 100;
+
+      return { change, percentChange, lastClose, previousClose };
+    } catch (error) {
+      console.error(`Failed to get last trading day change for ${optionSymbol}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Batch fetch last trading day changes for multiple option symbols
+   */
+  async batchGetLastTradingDayChange(optionSymbols: string[]): Promise<Map<string, {
+    change: number;
+    percentChange: number;
+    lastClose: number;
+    previousClose: number;
+  }>> {
+    const results = new Map();
+
+    const promises = optionSymbols.map((symbol, index) =>
+      new Promise<void>(resolve => {
+        setTimeout(async () => {
+          const data = await this.getLastTradingDayChange(symbol);
+          if (data) {
+            results.set(symbol, data);
+          }
+          resolve();
+        }, index * 100);
+      })
+    );
+
+    await Promise.all(promises);
+    return results;
+  }
+
+  /**
    * Clear the cache
    */
   clearCache(): void {

@@ -29,6 +29,7 @@ export interface OptionWithPricing extends Option {
   };
   cost: number;
   currentValue: number;
+  isLastTradingDay?: boolean; // true when showing last trading day's gain/loss (market closed)
 }
 
 export interface OptionChainData {

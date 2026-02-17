@@ -1,5 +1,3 @@
-import { getWeekOfMonth, formatWeekLabel, getWeekStart } from './dateUtils';
-
 export const getWeekOfMonth = (date: Date): number => {
   const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
   const dayOfMonth = date.getDate();

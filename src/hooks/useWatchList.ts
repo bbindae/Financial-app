@@ -24,12 +24,17 @@ export const useWatchList = (userId: string | undefined): UseWatchListReturn => 
   const finnhubServiceRef = useRef<FinnhubService | null>(null);
   const unsubscribeFunctionsRef = useRef<Map<string, () => void>>(new Map());
 
-  // Initialize Finnhub service
+  // Initialize Finnhub service and connect immediately
   useEffect(() => {
     if (!finnhubServiceRef.current) {
       console.log('WatchList: Initializing Finnhub service with API key:', FINNHUB_API_KEY ? 'Present' : 'Missing');
       finnhubServiceRef.current = new FinnhubService(FINNHUB_API_KEY);
     }
+
+    // Eagerly connect WebSocket so it's ready when items load
+    finnhubServiceRef.current.connect().catch(err => {
+      console.warn('WatchList: Eager Finnhub connection failed, will retry on subscribe:', err);
+    });
 
     return () => {
       // Cleanup on unmount
@@ -91,29 +96,31 @@ export const useWatchList = (userId: string | undefined): UseWatchListReturn => 
       }
     });
 
-    // Subscribe to new symbols
+    // Always fetch fresh quotes via REST API for all items on mount/reload
+    items.forEach(item => {
+      service.getQuote(item.symbol)
+        .then(data => {
+          console.log('WatchList: Received quote for', item.symbol, data);
+          if (data.c) {
+            setQuotes(prev => new Map(prev).set(item.symbol, {
+              symbol: item.symbol,
+              price: data.c,
+              change: data.d,
+              changePercent: data.dp,
+              high: data.h,
+              low: data.l,
+              open: data.o,
+              previousClose: data.pc,
+            }));
+          }
+        })
+        .catch(err => console.error(`WatchList: Error fetching quote for ${item.symbol}:`, err));
+    });
+
+    // Subscribe to WebSocket for new symbols
     items.forEach(item => {
       if (!unsubscribeFunctionsRef.current.has(item.symbol)) {
         console.log('WatchList: Subscribing to symbol:', item.symbol);
-        
-        // Fetch initial quote via REST API
-        service.getQuote(item.symbol)
-          .then(data => {
-            console.log('WatchList: Received initial quote for', item.symbol, data);
-            if (data.c) { // c = current price
-              setQuotes(prev => new Map(prev).set(item.symbol, {
-                symbol: item.symbol,
-                price: data.c,
-                change: data.d,
-                changePercent: data.dp,
-                high: data.h,
-                low: data.l,
-                open: data.o,
-                previousClose: data.pc,
-              }));
-            }
-          })
-          .catch(err => console.error(`WatchList: Error fetching quote for ${item.symbol}:`, err));
 
         // Subscribe to WebSocket for real-time updates
         const unsubscribe = service.subscribe(item.symbol, (trade) => {
