@@ -42,10 +42,9 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   onImport, 
   onAddTransaction
 }) => {
-  // Get current year and month for default filter
+  // Get current year for default filter
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear().toString();
-  const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
   
   // Default sort by Date Acquired descending
   const [sortConfig, setSortConfig] = useState<{ key: keyof Transaction; direction: 'asc' | 'desc' }>({ 
