@@ -2,15 +2,17 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-// TODO: Firebase Console에서 프로젝트를 생성한 후 아래 설정값을 업데이트하세요.
-// Firebase Console > Project Settings > Your apps > Web app > Config
+// Firebase config is loaded from environment variables
+// Development: .env.development (dev Firebase project)
+// Production:  .env.production  (prod Firebase project)
+// See .env.example for required variables
 const firebaseConfig = {
-  apiKey: "AIzaSyBbDdqV4tCowKPwiRNJqVPyRsqcfh-5f9k",
-  authDomain: "financial-app-ai.firebaseapp.com",
-  projectId: "financial-app-ai",
-  storageBucket: "financial-app-ai.firebasestorage.app",
-  messagingSenderId: "108411097374",
-  appId: "1:108411097374:web:f5d2374daf5eff70d1b90f"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 // Firebase 초기화
