@@ -46,9 +46,9 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear().toString();
   
-  // Default sort by Date Acquired descending
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Transaction; direction: 'asc' | 'desc' }>({ 
-    key: 'dateAcquired', 
+// Default sort by Date Realized descending
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Transaction; direction: 'asc' | 'desc' }>({
+    key: 'dateRealized',
     direction: 'desc' 
   });
   
@@ -66,16 +66,17 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
     return match ? match[0] : symbol;
   };
 
-  // Extract unique years and months from transactions
+  // Extract unique years and months from transactions (based on dateRealized)
   const { years, months } = useMemo(() => {
     const yearSet = new Set<string>();
     const monthSet = new Set<string>();
     
     transactions.forEach(t => {
-      // Extract date from YYYY-MM-DD or ISO timestamp format
-      const dateStr = t.dateAcquired.includes('T') 
-        ? t.dateAcquired.split('T')[0] 
-        : t.dateAcquired;
+      // Use dateRealized, fallback to dateAcquired
+      const rawDate = t.dateRealized || t.dateAcquired;
+      const dateStr = rawDate.includes('T')
+        ? rawDate.split('T')[0]
+        : rawDate;
       const [year, month] = dateStr.split('-');
       yearSet.add(year);
       monthSet.add(month);
@@ -87,13 +88,13 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
     };
   }, [transactions]);
 
-  // Apply filters
+  // Apply filters (based on dateRealized)
   const filteredTransactions = useMemo(() => {
     return transactions.filter(transaction => {
-      // Extract date from YYYY-MM-DD or ISO timestamp format
-      const dateStr = transaction.dateAcquired.includes('T') 
-        ? transaction.dateAcquired.split('T')[0] 
-        : transaction.dateAcquired;
+      const rawDate = transaction.dateRealized || transaction.dateAcquired;
+      const dateStr = rawDate.includes('T')
+        ? rawDate.split('T')[0]
+        : rawDate;
       const [year, month] = dateStr.split('-');
       
       if (selectedYear && year !== selectedYear) return false;
@@ -249,26 +250,30 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
         <table className="w-full table-fixed">
           <thead className="bg-gray-100">
             <tr>
-              <th className="px-2 py-3 text-left text-xs font-semibold cursor-pointer hover:bg-gray-200 w-[6%]" onClick={() => requestSort('symbol')}>
+              <th className="px-2 py-3 text-left text-xs font-semibold w-[5%]">Type</th>
+              <th className="px-2 py-3 text-left text-xs font-semibold cursor-pointer hover:bg-gray-200 w-[5%]" onClick={() => requestSort('symbol')}>
                 Symbol{getSortArrow('symbol')}
               </th>
-              <th className="px-2 py-3 text-left text-xs font-semibold w-[32%]">Security Desc.</th>
-              <th className="px-2 py-3 text-left text-xs font-semibold cursor-pointer hover:bg-gray-200 w-[5%]" onClick={() => requestSort('quantity')}>
+              <th className="px-2 py-3 text-left text-xs font-semibold w-[25%]">Security Desc.</th>
+              <th className="px-2 py-3 text-left text-xs font-semibold cursor-pointer hover:bg-gray-200 w-[4%]" onClick={() => requestSort('quantity')}>
                 Qty{getSortArrow('quantity')}
               </th>
-              <th className="px-2 py-3 text-left text-xs font-semibold cursor-pointer hover:bg-gray-200 w-[10%]" onClick={() => requestSort('dateAcquired')}>
+              <th className="px-2 py-3 text-left text-xs font-semibold cursor-pointer hover:bg-gray-200 w-[9%]" onClick={() => requestSort('dateAcquired')}>
                 Acquired{getSortArrow('dateAcquired')}
               </th>
-              <th className="px-2 py-3 text-left text-xs font-semibold cursor-pointer hover:bg-gray-200 w-[10%]" onClick={() => requestSort('dateSold')}>
+              <th className="px-2 py-3 text-left text-xs font-semibold cursor-pointer hover:bg-gray-200 w-[9%]" onClick={() => requestSort('dateSold')}>
                 Sold{getSortArrow('dateSold')}
               </th>
-              <th className="px-2 py-3 text-right text-xs font-semibold cursor-pointer hover:bg-gray-200 w-[9%]" onClick={() => requestSort('proceeds')}>
+              <th className="px-2 py-3 text-left text-xs font-semibold cursor-pointer hover:bg-gray-200 w-[9%]" onClick={() => requestSort('dateRealized')}>
+                Realized{getSortArrow('dateRealized')}
+              </th>
+              <th className="px-2 py-3 text-right text-xs font-semibold cursor-pointer hover:bg-gray-200 w-[8%]" onClick={() => requestSort('proceeds')}>
                 Proceeds{getSortArrow('proceeds')}
               </th>
-              <th className="px-2 py-3 text-right text-xs font-semibold cursor-pointer hover:bg-gray-200 w-[9%]" onClick={() => requestSort('costBasis')}>
+              <th className="px-2 py-3 text-right text-xs font-semibold cursor-pointer hover:bg-gray-200 w-[8%]" onClick={() => requestSort('costBasis')}>
                 Cost{getSortArrow('costBasis')}
               </th>
-              <th className="px-2 py-3 text-right text-xs font-semibold cursor-pointer hover:bg-gray-200 w-[10%]" onClick={() => requestSort('gainLoss')}>
+              <th className="px-2 py-3 text-right text-xs font-semibold cursor-pointer hover:bg-gray-200 w-[9%]" onClick={() => requestSort('gainLoss')}>
                 Gain/Loss{getSortArrow('gainLoss')}
               </th>
               <th className="px-2 py-3 text-center text-xs font-semibold w-[9%]">Action</th>
@@ -277,6 +282,13 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           <tbody>
             {paginatedTransactions.map((transaction, index) => (
               <tr key={transaction.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <td className="px-2 py-2 text-sm">
+                  <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
+                    transaction.type === 'Stock' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                  }`}>
+                    {transaction.type || 'Option'}
+                  </span>
+                </td>
                 <td className="px-2 py-2 text-sm font-medium truncate" title={transaction.symbol}>
                   {getSymbolDisplay(transaction.symbol)}
                 </td>
@@ -286,6 +298,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                 <td className="px-2 py-2 text-sm">{transaction.quantity}</td>
                 <td className="px-2 py-2 text-sm">{formatDate(transaction.dateAcquired)}</td>
                 <td className="px-2 py-2 text-sm">{formatDate(transaction.dateSold)}</td>
+                <td className="px-2 py-2 text-sm">{formatDate(transaction.dateRealized)}</td>
                 <td className="px-2 py-2 text-sm text-right">{formatCurrency(transaction.proceeds)}</td>
                 <td className="px-2 py-2 text-sm text-right">{formatCurrency(transaction.costBasis)}</td>
                 <td className={`px-2 py-2 text-sm text-right font-semibold ${transaction.gainLoss < 0 ? 'text-red-600' : 'text-black'}`}>

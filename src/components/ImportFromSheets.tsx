@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Transaction } from '../types/Transaction';
+import { Transaction, TransactionType } from '../types/Transaction';
 
 interface ImportFromSheetsProps {
   onImport: (transactions: Omit<Transaction, 'id'>[]) => Promise<{ imported: number; skipped: number }>;
@@ -55,12 +55,27 @@ export const ImportFromSheets: React.FC<ImportFromSheetsProps> = ({ onImport, on
         continue;
       }
 
+      // Determine type from security description
+      const descTrimmed = securityDescription.trim().toUpperCase();
+      const isPut = descTrimmed.startsWith('PUT');
+      const isCall = descTrimmed.startsWith('CALL');
+      const transactionType: TransactionType = (isPut || isCall) ? 'Option' : 'Stock';
+
+      // Determine dateRealized:
+      // PUT option → dateRealized = dateAcquired
+      // CALL option / Stock → dateRealized = dateSold
+      const formattedDateAcquired = formatDate(dateAcquired.trim());
+      const formattedDateSold = formatDate(dateSold.trim());
+      const dateRealized = isPut ? formattedDateAcquired : formattedDateSold;
+
       transactions.push({
+        type: transactionType,
         symbol: symbol.trim(),
         securityDescription: securityDescription.trim(),
         quantity: parseFloat(quantity) || 0,
-        dateAcquired: formatDate(dateAcquired.trim()),
-        dateSold: formatDate(dateSold.trim()),
+        dateAcquired: formattedDateAcquired,
+        dateSold: formattedDateSold,
+        dateRealized,
         proceeds: proceedsNum,
         costBasis: costBasisNum,
         gainLoss: proceedsNum - costBasisNum,

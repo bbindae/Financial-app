@@ -63,10 +63,12 @@ export class FirestoreTransactionService implements ITransactionService {
     const data = docSnapshot.data();
     return {
       id: docSnapshot.id,
+      type: data.type || 'Option',
       symbol: data.symbol,
       securityDescription: data.securityDescription || '',
       dateAcquired: this.convertTimestampToDate(data.dateAcquired),
       dateSold: this.convertTimestampToDate(data.dateSold),
+      dateRealized: this.convertTimestampToDate(data.dateRealized),
       proceeds: data.proceeds,
       costBasis: data.costBasis,
       quantity: data.quantity || 0,
@@ -79,7 +81,7 @@ export class FirestoreTransactionService implements ITransactionService {
    */
   async getAll(): Promise<Transaction[]> {
     try {
-      const q = query(this.getCollectionRef(), orderBy('dateAcquired', 'desc'));
+      const q = query(this.getCollectionRef(), orderBy('dateRealized', 'desc'));
       const querySnapshot = await getDocs(q);
       return querySnapshot.docs.map(doc => this.docToTransaction(doc));
     } catch (error) {
@@ -94,10 +96,12 @@ export class FirestoreTransactionService implements ITransactionService {
   async add(transaction: Omit<Transaction, 'id'>): Promise<Transaction> {
     try {
       const docData = {
+        type: transaction.type || 'Option',
         symbol: transaction.symbol,
         securityDescription: transaction.securityDescription || '',
         dateAcquired: this.convertDateToTimestamp(transaction.dateAcquired),
         dateSold: this.convertDateToTimestamp(transaction.dateSold),
+        dateRealized: this.convertDateToTimestamp(transaction.dateRealized),
         proceeds: transaction.proceeds,
         costBasis: transaction.costBasis,
         quantity: transaction.quantity || 0
@@ -125,10 +129,12 @@ export class FirestoreTransactionService implements ITransactionService {
       for (const transaction of transactions) {
         const docRef = doc(this.getCollectionRef());
         const docData = {
+          type: transaction.type || 'Option',
           symbol: transaction.symbol,
           securityDescription: transaction.securityDescription || '',
           dateAcquired: this.convertDateToTimestamp(transaction.dateAcquired),
           dateSold: this.convertDateToTimestamp(transaction.dateSold),
+          dateRealized: this.convertDateToTimestamp(transaction.dateRealized),
           proceeds: transaction.proceeds,
           costBasis: transaction.costBasis,
           quantity: transaction.quantity || 0
@@ -155,11 +161,15 @@ export class FirestoreTransactionService implements ITransactionService {
 
       if (transaction.symbol !== undefined) updateData.symbol = transaction.symbol;
       if (transaction.securityDescription !== undefined) updateData.securityDescription = transaction.securityDescription;
+      if (transaction.type !== undefined) updateData.type = transaction.type;
       if (transaction.dateAcquired !== undefined) {
         updateData.dateAcquired = this.convertDateToTimestamp(transaction.dateAcquired);
       }
       if (transaction.dateSold !== undefined) {
         updateData.dateSold = this.convertDateToTimestamp(transaction.dateSold);
+      }
+      if (transaction.dateRealized !== undefined) {
+        updateData.dateRealized = this.convertDateToTimestamp(transaction.dateRealized);
       }
       if (transaction.proceeds !== undefined) updateData.proceeds = transaction.proceeds;
       if (transaction.costBasis !== undefined) updateData.costBasis = transaction.costBasis;
@@ -197,7 +207,7 @@ export class FirestoreTransactionService implements ITransactionService {
    * @returns Unsubscribe function
    */
   subscribeToChanges(callback: (transactions: Transaction[]) => void): () => void {
-    const q = query(this.getCollectionRef(), orderBy('dateAcquired', 'desc'));
+    const q = query(this.getCollectionRef(), orderBy('dateRealized', 'desc'));
     
     this.unsubscribe = onSnapshot(q, (querySnapshot) => {
       const transactions = querySnapshot.docs.map(doc => this.docToTransaction(doc));

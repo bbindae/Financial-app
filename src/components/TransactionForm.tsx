@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Transaction } from '../types/Transaction';
+import { Transaction, TransactionType } from '../types/Transaction';
 import { calculateGainLoss } from '../utils/calculations';
 
 interface TransactionFormProps {
@@ -11,11 +11,13 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSubmit, onCl
   // Dates are in Los Angeles timezone - HTML input type="date" uses local timezone
   // Values are stored as YYYY-MM-DD strings without timezone conversion
   const [formData, setFormData] = useState({
+    type: 'Option' as TransactionType,
     symbol: '',
     securityDescription: '',
     quantity: 0,
     dateAcquired: '',
     dateSold: '',
+    dateRealized: '',
   });
   const [proceeds, setProceeds] = useState('');
   const [costBasis, setCostBasis] = useState('');
@@ -44,6 +46,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSubmit, onCl
 
     const newTransaction: Omit<Transaction, 'id'> = {
       ...formData,
+      type: formData.type,
       proceeds: proceedsNum,
       costBasis: costBasisNum,
       gainLoss: calculateGainLoss(proceedsNum, costBasisNum),
@@ -53,18 +56,20 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSubmit, onCl
     
     // Reset form
     setFormData({
+      type: 'Option' as TransactionType,
       symbol: '',
       securityDescription: '',
       quantity: 0,
       dateAcquired: '',
       dateSold: '',
+      dateRealized: '',
     });
     setProceeds('');
     setCostBasis('');
     setErrors({});
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -111,6 +116,19 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSubmit, onCl
       <h2 className="text-2xl font-bold mb-6">New Transaction</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Type</label>
+          <select
+            name="type"
+            value={formData.type}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="Option">Option</option>
+            <option value="Stock">Stock</option>
+          </select>
+        </div>
+
         <div>
           <label className="block text-sm font-medium mb-1">Symbol (CUSIP)</label>
           <input
@@ -165,6 +183,18 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSubmit, onCl
             type="date"
             name="dateSold"
             value={formData.dateSold}
+            onChange={handleChange}
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Date Realized</label>
+          <input
+            type="date"
+            name="dateRealized"
+            value={formData.dateRealized}
             onChange={handleChange}
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"

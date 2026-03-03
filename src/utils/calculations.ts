@@ -9,7 +9,8 @@ export const groupByMonth = (transactions: Transaction[]): MonthlySummary[] => {
   const monthMap = new Map<string, number>();
 
   transactions.forEach(transaction => {
-    const monthKey = getMonthKey(transaction.dateAcquired);
+    const dateField = transaction.dateRealized || transaction.dateAcquired;
+    const monthKey = getMonthKey(dateField);
     const current = monthMap.get(monthKey) || 0;
     monthMap.set(monthKey, current + transaction.gainLoss);
   });
@@ -23,7 +24,8 @@ export const groupByWeek = (transactions: Transaction[]): WeeklySummary[] => {
   const weekMap = new Map<string, number>();
 
   transactions.forEach(transaction => {
-    const weekKey = getWeekKey(transaction.dateAcquired);
+    const dateField = transaction.dateRealized || transaction.dateAcquired;
+    const weekKey = getWeekKey(dateField);
     const current = weekMap.get(weekKey) || 0;
     weekMap.set(weekKey, current + transaction.gainLoss);
   });
