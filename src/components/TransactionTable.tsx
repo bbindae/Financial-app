@@ -53,9 +53,9 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
     direction: 'desc' 
   });
   
-  // Year/Month filter states - default to current year and month
+  // Year/Month filter states - default to current year and all months
   const [selectedYear, setSelectedYear] = useState<string>(currentYear);
-  const [selectedMonth, setSelectedMonth] = useState<string>(currentMonth);
+  const [selectedMonth, setSelectedMonth] = useState<string>('');
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -160,10 +160,10 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
   const clearFilters = () => {
     setSelectedYear(currentYear);
-    setSelectedMonth(currentMonth);
+    setSelectedMonth('');
   };
 
-  const hasNonDefaultFilters = selectedYear !== currentYear || selectedMonth !== currentMonth;
+  const hasNonDefaultFilters = selectedYear !== currentYear || selectedMonth !== '';
 
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 

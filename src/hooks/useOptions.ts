@@ -122,44 +122,19 @@ export const useOptions = (userId: string | undefined): UseOptionsReturn => {
     );
 
     let todayGainLoss = { amount: 0, percent: 0 };
-    let isLastTradingDay = false;
+    const isLastTradingDay = marketClosed;
 
-    if (marketClosed) {
-      isLastTradingDay = true;
-
-      if (priceData?.change !== undefined && priceData?.change !== null && priceData.change !== 0) {
-        const changePerContract = priceData.change * option.quantity * 100;
-        const amount = option.optionType === 'SELL_PUT' ? -changePerContract : changePerContract;
-        const percent = priceData.percentChange !== undefined
-          ? (option.optionType === 'SELL_PUT' ? -priceData.percentChange : priceData.percentChange) : 0;
-        todayGainLoss = { amount, percent };
-      } else if (priceData?.lastPrice && effectiveClosingPrice && effectiveClosingPrice > 0
-                 && Math.abs(priceData.lastPrice - effectiveClosingPrice) > 0.001) {
-        todayGainLoss = calculateTodayGainLoss(
-          priceData.lastPrice,
-          effectiveClosingPrice,
-          option.quantity,
-          option.optionType
-        );
-      }
-    } else {
-      if (priceData?.change !== undefined && priceData?.change !== null && currentPrice > 0) {
-        const changePerContract = priceData.change * option.quantity * 100;
-        const amount = option.optionType === 'SELL_PUT' ? -changePerContract : changePerContract;
-        const percent = priceData.percentChange !== undefined
-          ? (option.optionType === 'SELL_PUT' ? -priceData.percentChange : priceData.percentChange) : 0;
-        todayGainLoss = { amount, percent };
-      } else if (effectiveClosingPrice && effectiveClosingPrice > 0 && currentPrice > 0) {
-        todayGainLoss = calculateTodayGainLoss(
-          currentPrice,
-          effectiveClosingPrice,
-          option.quantity,
-          option.optionType
-        );
-      }
+    // Always use previousClosingPrice and currentPrice for today's gain/loss
+    if (effectiveClosingPrice && effectiveClosingPrice > 0 && currentPrice > 0) {
+      todayGainLoss = calculateTodayGainLoss(
+        currentPrice,
+        effectiveClosingPrice,
+        option.quantity,
+        option.optionType
+      );
     }
 
-    console.log(`[Option ${option.symbol} ${option.strikePrice}] marketClosed=${marketClosed}, isLastTradingDay=${isLastTradingDay}, yahoo.change=${priceData?.change}, yahoo.lastPrice=${priceData?.lastPrice}, closingPrice=${effectiveClosingPrice}, currentPrice=${currentPrice}, todayGainLoss=${todayGainLoss.amount}`);
+    console.log(`[Option ${option.symbol} ${option.strikePrice}] marketClosed=${marketClosed}, closingPrice=${effectiveClosingPrice}, currentPrice=${currentPrice}, todayGainLoss=${todayGainLoss.amount}`);
 
     const totalGainLoss = calculateTotalGainLoss(
       currentValue,
@@ -259,18 +234,23 @@ export const useOptions = (userId: string | undefined): UseOptionsReturn => {
             const sym = buildYahooOptionSymbol(opt.symbol, opt.strikePrice, opt.expirationDate, opt.optionType);
             const chartData = chartChanges.get(sym);
             if (chartData && (opt.todayGainLoss?.amount ?? 0) === 0) {
-              const changePerContract = chartData.change * opt.quantity * 100;
-              const amount = opt.optionType === 'SELL_PUT' ? -changePerContract : changePerContract;
-              const percent = opt.optionType === 'SELL_PUT' ? -chartData.percentChange : chartData.percentChange;
               if (service && chartData.previousClose > 0) {
                 closingPricesRef.current.set(sym, chartData.previousClose);
                 service.saveClosingPrice(sym, chartData.previousClose).catch(e =>
                   console.warn('Failed to save chart-derived closing price:', e)
                 );
               }
+              const price = opt.currentPrice || chartData.lastClose;
               return {
                 ...opt,
-                todayGainLoss: { amount, percent },
+                closingPrice: chartData.previousClose,
+                currentPrice: price,
+                todayGainLoss: calculateTodayGainLoss(
+                  price,
+                  chartData.previousClose,
+                  opt.quantity,
+                  opt.optionType
+                ),
                 isLastTradingDay: true
               };
             }

@@ -16,7 +16,7 @@ The following items are planned future work for the project. If you like, I can 
   - Today's and Total gain/loss calculations with percentages
   - Integration with watchlist for symbol dropdown selection
 - [ ] Host website, hyukkim.com/financial/options and add this web into it 
-- [ ] Add github workflow to deploy when pull request is merged into main branch
+- [x] Add github workflow to deploy when pull request is merged into main branch
 - [x] Remove symbol duplicate check when entering transactions or importing files
 - [x] Set default transaction sort order to Date Acquired (descending)
 - [x] Add sort arrows (▲/▼) to each transaction column header
