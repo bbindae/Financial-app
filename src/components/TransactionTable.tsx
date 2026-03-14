@@ -42,19 +42,32 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   onImport, 
   onAddTransaction
 }) => {
-  // Get current year for default filter
+  // Get current year/month for default filter
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear().toString();
-  
+  const currentMonthStr = String(currentDate.getMonth() + 1).padStart(2, '0');
+
+  const STORAGE_KEY_YEAR = 'txn_filter_year';
+  const STORAGE_KEY_MONTH = 'txn_filter_month';
+
 // Default sort by Date Realized descending
   const [sortConfig, setSortConfig] = useState<{ key: keyof Transaction; direction: 'asc' | 'desc' }>({
     key: 'dateRealized',
     direction: 'desc' 
   });
   
-  // Year/Month filter states - default to current year and all months
-  const [selectedYear, setSelectedYear] = useState<string>(currentYear);
-  const [selectedMonth, setSelectedMonth] = useState<string>('');
+  // Year/Month filter states - restored from localStorage, with smart month default
+  const [selectedYear, setSelectedYear] = useState<string>(() => {
+    return localStorage.getItem(STORAGE_KEY_YEAR) || currentYear;
+  });
+  // monthInitialized: true if user has ever selected a month (localStorage exists)
+  const [monthInitialized, setMonthInitialized] = useState<boolean>(() => {
+    return localStorage.getItem(STORAGE_KEY_MONTH) !== null;
+  });
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_MONTH);
+    return saved !== null ? saved : '';
+  });
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -130,6 +143,22 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
     return sortedTransactions.slice(startIndex, endIndex);
   }, [sortedTransactions, currentPage]);
 
+  // Smart month default: once transactions load, set to current month if it has data
+  React.useEffect(() => {
+    if (!monthInitialized && transactions.length > 0) {
+      const hasCurrentMonthTx = transactions.some(t => {
+        const rawDate = t.dateRealized || t.dateAcquired;
+        const dateStr = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
+        const [year, month] = dateStr.split('-');
+        return year === currentYear && month === currentMonthStr;
+      });
+      const initialMonth = hasCurrentMonthTx ? currentMonthStr : '';
+      setSelectedMonth(initialMonth);
+      setMonthInitialized(true);
+      localStorage.setItem(STORAGE_KEY_MONTH, initialMonth);
+    }
+  }, [transactions, monthInitialized, currentYear, currentMonthStr]);
+
   // Reset to page 1 when filters change
   React.useEffect(() => {
     setCurrentPage(1);
@@ -151,16 +180,23 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   };
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedYear(e.target.value);
+    const value = e.target.value;
+    setSelectedYear(value);
+    localStorage.setItem(STORAGE_KEY_YEAR, value);
   };
 
   const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedMonth(e.target.value);
+    const value = e.target.value;
+    setSelectedMonth(value);
+    setMonthInitialized(true);
+    localStorage.setItem(STORAGE_KEY_MONTH, value);
   };
 
   const clearFilters = () => {
     setSelectedYear(currentYear);
     setSelectedMonth('');
+    localStorage.setItem(STORAGE_KEY_YEAR, currentYear);
+    localStorage.setItem(STORAGE_KEY_MONTH, '');
   };
 
   const hasNonDefaultFilters = selectedYear !== currentYear || selectedMonth !== '';
