@@ -3,6 +3,7 @@ import { TransactionForm } from './TransactionForm';
 import { TransactionTable } from './TransactionTable';
 import { SummaryStats } from './SummaryStats';
 import { MonthlyChart } from './MonthlyChart';
+import { SymbolGainLoss } from './SymbolGainLoss';
 import { Modal } from './Modal';
 import { ImportFromSheets } from './ImportFromSheets';
 import { OptionForm } from './OptionForm';
@@ -263,6 +264,9 @@ const Dashboard: React.FC = () => {
         
         {/* Monthly performance chart */}
         <MonthlyChart transactions={transactions} />
+
+        {/* Gain/Loss breakdown by symbol */}
+        <SymbolGainLoss transactions={transactions} />
 
         {/* Modal for adding individual transactions manually */}
         <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
