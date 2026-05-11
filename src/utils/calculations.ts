@@ -17,7 +17,7 @@ export const groupByMonth = (transactions: Transaction[]): MonthlySummary[] => {
 
   return Array.from(monthMap.entries())
     .map(([month, totalGainLoss]) => ({ month, totalGainLoss }))
-    .sort((a, b) => a.month.localeCompare(b.month));
+    .sort((a, b) => b.month.localeCompare(a.month));
 };
 
 export const groupByWeek = (transactions: Transaction[]): WeeklySummary[] => {
@@ -32,7 +32,7 @@ export const groupByWeek = (transactions: Transaction[]): WeeklySummary[] => {
 
   return Array.from(weekMap.entries())
     .map(([week, totalGainLoss]) => ({ week, totalGainLoss }))
-    .sort((a, b) => a.week.localeCompare(b.week));
+    .sort((a, b) => b.week.localeCompare(a.week));
 };
 
 export const calculateTotal = (transactions: Transaction[]): number => {

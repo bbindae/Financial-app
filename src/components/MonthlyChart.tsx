@@ -9,7 +9,7 @@ interface MonthlyChartProps {
 }
 
 export const MonthlyChart: React.FC<MonthlyChartProps> = ({ transactions }) => {
-  const monthlySummaries = groupByMonth(transactions);
+  const monthlySummaries = [...groupByMonth(transactions)].sort((a, b) => a.month.localeCompare(b.month));
 
   const chartData = monthlySummaries.map(({ month, totalGainLoss }) => ({
     month: formatMonthDisplay(month),

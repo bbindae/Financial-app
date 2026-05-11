@@ -82,14 +82,22 @@ export const SymbolGainLoss: React.FC<SymbolGainLossProps> = ({ transactions }) 
   const [selectedYear, setSelectedYear] = useState<string>(savedPrefs?.selectedYear ?? 'all');
   const [selectedMonth, setSelectedMonth] = useState<string>(savedPrefs?.selectedMonth ?? 'all');
 
+  // Extract YYYY-MM-DD string from date field without UTC conversion
+  const getDateParts = (dateField: string): { year: string; month: string } | null => {
+    const dateStr = dateField.includes('T') ? dateField.split('T')[0] : dateField;
+    const match = dateStr.match(/^(\d{4})-(\d{2})/);
+    if (!match) return null;
+    return { year: match[1], month: match[2] };
+  };
+
   // Derive unique years from transactions
   const years = useMemo(() => {
     const yearSet = new Set<string>();
     transactions.forEach((t) => {
       const dateField = t.dateRealized || t.dateAcquired;
       if (dateField) {
-        const year = new Date(dateField).getFullYear().toString();
-        if (!isNaN(Number(year))) yearSet.add(year);
+        const parts = getDateParts(dateField);
+        if (parts) yearSet.add(parts.year);
       }
     });
     return Array.from(yearSet).sort((a, b) => Number(b) - Number(a));
@@ -100,12 +108,10 @@ export const SymbolGainLoss: React.FC<SymbolGainLossProps> = ({ transactions }) 
     return transactions.filter((t) => {
       const dateField = t.dateRealized || t.dateAcquired;
       if (!dateField) return false;
-      const date = new Date(dateField);
-      if (isNaN(date.getTime())) return false;
-      const year = date.getFullYear().toString();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      if (selectedYear !== 'all' && year !== selectedYear) return false;
-      if (selectedMonth !== 'all' && month !== selectedMonth) return false;
+      const parts = getDateParts(dateField);
+      if (!parts) return false;
+      if (selectedYear !== 'all' && parts.year !== selectedYear) return false;
+      if (selectedMonth !== 'all' && parts.month !== selectedMonth) return false;
       return true;
     });
   }, [transactions, selectedYear, selectedMonth]);
