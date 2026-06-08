@@ -30,6 +30,7 @@ interface WatchListProps {
   options?: OptionWithPricing[];
   onDeleteOption?: (optionId: string) => void;
   onAddOption?: () => void;
+  onOpenNews?: (symbol: string) => void;
 }
 
 const EXPANDED_STORAGE_KEY = 'watchlist-expanded-symbols';
@@ -55,7 +56,13 @@ const saveSetToStorage = (key: string, set: Set<string>) => {
   }
 };
 
-const WatchList: React.FC<WatchListProps> = ({ userId, options = [], onDeleteOption, onAddOption }) => {
+const WatchList: React.FC<WatchListProps> = ({
+  userId,
+  options = [],
+  onDeleteOption,
+  onAddOption,
+  onOpenNews,
+}) => {
   const [newSymbol, setNewSymbol] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
@@ -321,6 +328,19 @@ const WatchList: React.FC<WatchListProps> = ({ userId, options = [], onDeleteOpt
                           <div className="text-sm font-medium text-gray-900">
                             {item.symbol}
                           </div>
+                          {onOpenNews && (
+                            <button
+                              onClick={() => onOpenNews(item.symbol)}
+                              className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-300 text-slate-500 transition-colors hover:border-slate-400 hover:bg-slate-100 hover:text-slate-800"
+                              title={`Show news for ${item.symbol}`}
+                              aria-label={`Show news for ${item.symbol}`}
+                            >
+                              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19.5 6.75v10.5A2.25 2.25 0 0117.25 19.5H6.75A2.25 2.25 0 014.5 17.25V6.75A2.25 2.25 0 016.75 4.5h10.5A2.25 2.25 0 0119.5 6.75z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8.25 9h7.5M8.25 12h7.5M8.25 15h4.5" />
+                              </svg>
+                            </button>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-2 whitespace-nowrap text-right">
