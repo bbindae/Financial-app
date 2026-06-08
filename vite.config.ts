@@ -1,6 +1,21 @@
-import { defineConfig, Plugin } from 'vite'
+import { defineConfig, loadEnv, Plugin } from 'vite'
 import type { IncomingMessage, ServerResponse } from 'http'
 import react from '@vitejs/plugin-react'
+
+async function readJsonBody(req: IncomingMessage): Promise<unknown> {
+  const chunks: Buffer[] = []
+
+  for await (const chunk of req) {
+    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk)
+  }
+
+  if (chunks.length === 0) {
+    return {}
+  }
+
+  const raw = Buffer.concat(chunks).toString('utf8')
+  return raw ? JSON.parse(raw) : {}
+}
 
 /**
  * Custom Vite plugin to proxy Yahoo Finance API requests
@@ -170,7 +185,62 @@ function yahooFinanceProxy(): Plugin {
   }
 }
 
+function stockNewsProxy(stockNewsApiUrl: string | undefined): Plugin {
+  return {
+    name: 'stock-news-proxy',
+    configureServer(server) {
+      server.middlewares.use('/api/stock-news', async (req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+
+        if (req.method === 'OPTIONS') {
+          res.writeHead(200)
+          res.end()
+          return
+        }
+
+        if (req.method !== 'POST') {
+          res.writeHead(405, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: 'Method not allowed' }))
+          return
+        }
+
+        if (!stockNewsApiUrl) {
+          res.writeHead(500, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: 'STOCK_NEWS_API_URL is not configured' }))
+          return
+        }
+
+        try {
+          const body = await readJsonBody(req)
+          const response = await fetch(stockNewsApiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+          })
+
+          const contentType = response.headers.get('content-type') || 'application/json'
+          const payload = await response.text()
+          res.writeHead(response.status, { 'Content-Type': contentType })
+          res.end(payload)
+        } catch (error) {
+          console.error('[Stock News Proxy] Request failed:', error)
+          res.writeHead(502, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: 'Stock news proxy request failed' }))
+        }
+      })
+    },
+  }
+}
+
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react(), yahooFinanceProxy()],
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+
+  return {
+    plugins: [react(), yahooFinanceProxy(), stockNewsProxy(env.STOCK_NEWS_API_URL)],
+  }
 })

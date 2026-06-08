@@ -7,6 +7,7 @@ import { SymbolGainLoss } from './SymbolGainLoss';
 import { Modal } from './Modal';
 import { ImportFromSheets } from './ImportFromSheets';
 import { OptionForm } from './OptionForm';
+import { StockNewsModal } from './StockNewsModal';
 import WatchList from './WatchList';
 import { useTransactions } from '../hooks/useTransactions';
 import { useOptions } from '../hooks/useOptions';
@@ -46,6 +47,9 @@ const Dashboard: React.FC = () => {
   
   // State for controlling the "Import from Sheets" modal visibility
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+  // State for controlling stock news modal visibility
+  const [selectedNewsTicker, setSelectedNewsTicker] = useState<string | null>(null);
 
   // Migration state
   const [showMigrationBanner, setShowMigrationBanner] = useState(false);
@@ -245,6 +249,7 @@ const Dashboard: React.FC = () => {
             options={options}
             onDeleteOption={deleteOption}
             onAddOption={() => setIsOptionModalOpen(true)}
+            onOpenNews={setSelectedNewsTicker}
           />
         </div>
 
@@ -289,6 +294,12 @@ const Dashboard: React.FC = () => {
             onClose={() => setIsImportModalOpen(false)}
           />
         </Modal>
+
+        <StockNewsModal
+          ticker={selectedNewsTicker}
+          isOpen={selectedNewsTicker !== null}
+          onClose={() => setSelectedNewsTicker(null)}
+        />
       </div>
     </div>
   );
