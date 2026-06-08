@@ -182,6 +182,7 @@ export const StockNewsModal: React.FC<StockNewsModalProps> = ({ ticker, isOpen, 
     const loadNews = async () => {
       setLoading(true);
       setError(null);
+      setNews(null);
 
       try {
         const response = await stockNewsService.getNews(ticker);
